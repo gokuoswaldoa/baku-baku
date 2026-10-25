@@ -1,6 +1,6 @@
-# Bolas de Fuego - Encuesta de Validación (Dark Kitchen)
+# Baku Baku - Encuesta de Validación (Dark Kitchen)
 
-Single Page Application (SPA) en React con Tailwind CSS para la validación de mercado de una Dark Kitchen de sushi empanizado en esfera (*Bolas de Fuego*) con entrega a domicilio local.
+Single Page Application (SPA) en React con Tailwind CSS para la validación de mercado de **Baku Baku**, una Dark Kitchen local especializada en sushi empanizado en esfera (*Bolas de Fuego*).
 
 ## Características de Diseño UI/UX
 - **Enfoque Mobile-First**: Optimizado para abrirse directamente desde enlaces compartidos en WhatsApp y Facebook en pantallas móviles (360px a 440px).

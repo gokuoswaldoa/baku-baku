@@ -5,13 +5,13 @@ export function generateUniqueCoupon(phone = '') {
   const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
   
   if (phoneSuffix) {
-    return `FUEGO-${phoneSuffix}`;
+    return `BAKU-${phoneSuffix}`;
   }
-  return `FUEGO-${randomChars}`;
+  return `BAKU-${randomChars}`;
 }
 
-const STORAGE_KEY = 'bolas_de_fuego_leads';
-const CONFIG_KEY = 'bolas_de_fuego_config';
+const STORAGE_KEY = 'baku_baku_leads';
+const CONFIG_KEY = 'baku_baku_config';
 
 // Retrieve all leads from browser database
 export function getStoredLeads() {
@@ -137,7 +137,7 @@ export function exportLeadsToCSV(leads) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `bolas_de_fuego_leads_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `baku_baku_leads_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

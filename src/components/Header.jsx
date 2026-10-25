@@ -12,14 +12,14 @@ export default function Header({ currentStep, totalSteps, isSubmitted }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-black tracking-wider text-white uppercase font-sans">
-                Bolas de Fuego
+                Baku Baku
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-fire-500/20 text-fire-400 border border-fire-500/30">
                 Dark Kitchen
               </span>
             </div>
             <p className="text-xs text-neutral-400 font-medium">
-              Sushi Empanizado en Esfera • Entrega Local
+              Bolas de Fuego • Sushi en Esfera
             </p>
           </div>
         </div>

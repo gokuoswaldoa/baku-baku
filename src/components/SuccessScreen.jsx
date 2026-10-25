@@ -4,7 +4,7 @@ import { CheckCircle2, Copy, Check, Utensils, Tag, ShieldCheck, ArrowRight } fro
 
 export default function SuccessScreen({ formData, uniqueCoupon, onReset }) {
   const [copied, setCopied] = useState(false);
-  const couponCode = uniqueCoupon || 'FUEGO-FUNDADOR';
+  const couponCode = uniqueCoupon || 'BAKU-FUNDADOR';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(couponCode);
@@ -13,7 +13,7 @@ export default function SuccessScreen({ formData, uniqueCoupon, onReset }) {
   };
 
   const shareText = encodeURIComponent(
-    `Descubrí Bolas de Fuego, el nuevo concepto de sushi empanizado en esfera a domicilio. Responde su breve encuesta y recibe $40 MXN de descuento en tu primer pedido mayor a $180.`
+    `Descubrí Baku Baku, el nuevo concepto de sushi empanizado en esfera a domicilio. Responde su breve encuesta y recibe $40 MXN de descuento en tu primer pedido mayor a $180.`
   );
   const whatsappShareUrl = `https://api.whatsapp.com/send?text=${shareText}`;
 

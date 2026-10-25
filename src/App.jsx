@@ -140,7 +140,7 @@ export default function App() {
       }
     } else if (step === 3) {
       if (!formData.trySushi) {
-        setValidationError('Por favor indícanos si te animarías a probar Bolas de Fuego.');
+        setValidationError('Por favor indícanos si te animarías a probar las Bolas de Fuego de Baku Baku.');
         return false;
       }
     } else if (step === 4) {
@@ -229,7 +229,7 @@ export default function App() {
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fire-500/10 border border-fire-500/30 text-fire-400 text-xs font-bold tracking-wide uppercase mb-3">
               <Flame className="w-3.5 h-3.5 text-fire-500" />
-              Nueva Dark Kitchen Local
+              Baku Baku • Dark Kitchen Local
             </div>
 
             <h1 className="text-3xl font-extrabold text-white tracking-tight mb-3">
@@ -237,9 +237,8 @@ export default function App() {
             </h1>
 
             <p className="text-neutral-300 text-sm leading-relaxed mb-6 px-2">
-              Estamos preparando la apertura a puerta cerrada de una nueva propuesta en la colonia:
-              <strong className="text-white"> sushi empanizado crujiente en forma de esfera</strong>,
-              relleno de ingredientes de primera calidad y bañado en salsas secretas.
+              Estamos preparando la apertura a puerta cerrada de <strong className="text-white">Baku Baku</strong> en la colonia:
+              sushi empanizado crujiente en forma de esfera, relleno de ingredientes de primera calidad y bañado en salsas secretas.
             </p>
 
             <div className="grid grid-cols-2 gap-3 mb-8 text-left">
@@ -419,8 +418,8 @@ export default function App() {
                     <FlameSphereIcon className="w-6 h-6" />
                   </div>
                   <div className="text-xs">
-                    <span className="font-bold text-white block">Concepto Bolas de Fuego:</span>
-                    <span className="text-neutral-400">Sushi frito en esfera, fácil de comer sin cubiertos ni desastres.</span>
+                    <span className="font-bold text-white block">Concepto Baku Baku:</span>
+                    <span className="text-neutral-400">Sushi frito en esfera (Bolas de Fuego), fácil de comer sin cubiertos ni desastres.</span>
                   </div>
                 </div>
 
@@ -635,7 +634,7 @@ export default function App() {
       {/* Footer with Discreet Admin Access */}
       <footer className="w-full py-4 text-center border-t border-charcoal-900 text-xs text-neutral-500">
         <div className="max-w-md mx-auto px-4 flex items-center justify-between">
-          <span>Bolas de Fuego • Dark Kitchen Local</span>
+          <span>Baku Baku • Dark Kitchen Local</span>
           <button
             onClick={() => setIsAdminOpen(true)}
             className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-fire-400 transition-colors py-1 px-2 rounded hover:bg-charcoal-900"

@@ -74,7 +74,7 @@ export default function AdminModal({ isOpen, onClose }) {
     const phone = (lead.whatsapp || '').replace(/[^0-9]/g, '');
     const cleanPhone = phone.length === 10 ? `52${phone}` : phone;
     const message = encodeURIComponent(
-      `Hola! Muchas gracias por participar en la encuesta de Bolas de Fuego. Te comparto nuestro menú digital para entregas en la colonia. Recuerda que tienes tu beneficio de fundador: $40 MXN de descuento en tu primer pedido mayor a $180 presentando tu código personal: ${lead.couponCode}. ¿Te gustaría revisar las opciones disponibles hoy?`
+      `Hola! Muchas gracias por participar en la encuesta de Baku Baku. Te comparto nuestro menú digital de Bolas de Fuego para entregas en la colonia. Recuerda que tienes tu beneficio de fundador: $40 MXN de descuento en tu primer pedido mayor a $180 presentando tu código personal: ${lead.couponCode}. ¿Te gustaría revisar las opciones disponibles hoy?`
     );
     return `https://wa.me/${cleanPhone}?text=${message}`;
   };
