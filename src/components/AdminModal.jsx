@@ -7,20 +7,14 @@ import {
   getWebhookUrl,
   saveWebhookUrl
 } from '../utils/storage';
-import { WhatsAppIcon, FlameSphereIcon } from './Icons';
+import { WhatsAppIcon } from './Icons';
+import BakuLogo from './BakuLogo';
 import {
   X,
   Download,
   Trash2,
-  CheckCircle2,
-  Clock,
-  Send,
-  Phone,
-  Tag,
   Settings,
-  HelpCircle,
-  Search,
-  ExternalLink
+  Search
 } from 'lucide-react';
 
 export default function AdminModal({ isOpen, onClose }) {
@@ -74,26 +68,24 @@ export default function AdminModal({ isOpen, onClose }) {
     const phone = (lead.whatsapp || '').replace(/[^0-9]/g, '');
     const cleanPhone = phone.length === 10 ? `52${phone}` : phone;
     const message = encodeURIComponent(
-      `Hola! Muchas gracias por participar en la encuesta de Baku Baku. Te comparto nuestro menú digital de Bolas de Fuego para entregas en la colonia. Recuerda que tienes tu beneficio de fundador: $40 MXN de descuento en tu primer pedido mayor a $180 presentando tu código personal: ${lead.couponCode}. ¿Te gustaría revisar las opciones disponibles hoy?`
+      `Hola! Muchas gracias por participar en la encuesta de BAKU-BAKU SUSHI & FIRE. Te comparto nuestro menú oficial para entregas en la colonia. Recuerda que tienes tu beneficio de fundador: $40 MXN de descuento en tu primer pedido mayor a $180 con tu código personal: ${lead.couponCode}. ¿Te gustaría revisar las opciones disponibles hoy?`
     );
     return `https://wa.me/${cleanPhone}?text=${message}`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-charcoal-900 border border-charcoal-700 w-full max-w-3xl rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-baku-carbon/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-baku-white border border-baku-border w-full max-w-3xl rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-charcoal-800 flex items-center justify-between bg-charcoal-950">
+        <div className="px-5 py-4 border-b border-baku-border flex items-center justify-between bg-baku-ivory">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-fire-500/10 border border-fire-500/30 flex items-center justify-center">
-              <FlameSphereIcon className="w-5 h-5" />
-            </div>
+            <BakuLogo size="header" />
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <h2 className="text-base font-extrabold text-baku-carbon flex items-center gap-2">
                 Base de Datos y Control de Cupones
               </h2>
-              <p className="text-xs text-neutral-400">
-                Gestión directa de fundadores y clientes potenciales
+              <p className="text-xs text-baku-neutral">
+                Gestión directa de fundadores y clientes potenciales de BAKU-BAKU
               </p>
             </div>
           </div>
@@ -101,14 +93,14 @@ export default function AdminModal({ isOpen, onClose }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowWebhookConfig(!showWebhookConfig)}
-              className="p-2 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-neutral-300 hover:text-white transition-colors"
+              className="p-2 rounded-lg bg-white hover:bg-baku-subtle text-baku-carbon transition-colors border border-baku-border"
               title="Configurar conexión con Google Sheets"
             >
               <Settings className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-neutral-400 hover:text-white transition-colors"
+              className="p-2 rounded-lg bg-white hover:bg-baku-subtle text-baku-carbon transition-colors border border-baku-border"
             >
               <X className="w-4 h-4" />
             </button>
@@ -117,12 +109,12 @@ export default function AdminModal({ isOpen, onClose }) {
 
         {/* Webhook Drawer (Optional Google Sheet integration) */}
         {showWebhookConfig && (
-          <div className="p-4 bg-charcoal-950 border-b border-charcoal-800 animate-slide-up text-xs">
+          <div className="p-4 bg-baku-tint border-b border-baku-border animate-slide-up text-xs">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <span className="font-bold text-white block">Sincronización con Google Sheets (Opcional)</span>
-                <span className="text-neutral-400">
-                  Pega aquí la URL de tu Google Apps Script si deseas que cada respuesta se guarde automáticamente en una hoja de cálculo en la nube.
+                <span className="font-extrabold text-baku-carbon block">Sincronización con Google Sheets</span>
+                <span className="text-baku-neutral">
+                  Pega aquí la URL de tu Google Apps Script para sincronizar cada respuesta en la nube automáticamente.
                 </span>
               </div>
             </div>
@@ -132,11 +124,11 @@ export default function AdminModal({ isOpen, onClose }) {
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrlState(e.target.value)}
                 placeholder="https://script.google.com/macros/s/.../exec"
-                className="flex-1 px-3 py-2 rounded-lg bg-charcoal-900 border border-charcoal-700 text-white text-xs focus:outline-none focus:border-fire-500"
+                className="flex-1 px-3 py-2 rounded-lg bg-white border border-baku-border text-baku-carbon text-xs focus:outline-none focus:border-baku-orange"
               />
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-fire-500 hover:bg-fire-600 text-white font-semibold text-xs transition-colors shrink-0"
+                className="px-4 py-2 rounded-lg bg-baku-orange hover:bg-baku-orange-hover text-white font-bold text-xs transition-colors shrink-0 cursor-pointer"
               >
                 {webhookSaved ? 'Guardado' : 'Guardar URL'}
               </button>
@@ -145,41 +137,41 @@ export default function AdminModal({ isOpen, onClose }) {
         )}
 
         {/* Metric Cards */}
-        <div className="p-4 border-b border-charcoal-800 grid grid-cols-3 gap-3 bg-charcoal-900/60 text-center">
-          <div className="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800">
-            <span className="text-xs text-neutral-400 block mb-0.5">Total Respuestas</span>
-            <span className="text-xl font-black text-white">{leads.length}</span>
+        <div className="p-4 border-b border-baku-border grid grid-cols-3 gap-3 bg-baku-ivory/50 text-center">
+          <div className="p-3 rounded-xl bg-white border border-baku-border shadow-sm">
+            <span className="text-xs text-baku-neutral font-semibold block mb-0.5">Total Respuestas</span>
+            <span className="text-xl font-black text-baku-carbon">{leads.length}</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800">
-            <span className="text-xs text-neutral-400 block mb-0.5">Con WhatsApp</span>
-            <span className="text-xl font-black text-emerald-400">{totalWithPhone}</span>
+          <div className="p-3 rounded-xl bg-white border border-baku-border shadow-sm">
+            <span className="text-xs text-baku-neutral font-semibold block mb-0.5">Con WhatsApp</span>
+            <span className="text-xl font-black text-emerald-600">{totalWithPhone}</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800">
-            <span className="text-xs text-neutral-400 block mb-0.5">Cupones Canjeados</span>
-            <span className="text-xl font-black text-fire-500">{totalRedeemed}</span>
+          <div className="p-3 rounded-xl bg-white border border-baku-border shadow-sm">
+            <span className="text-xs text-baku-neutral font-semibold block mb-0.5">Cupones Canjeados</span>
+            <span className="text-xl font-black text-baku-orange">{totalRedeemed}</span>
           </div>
         </div>
 
         {/* Filter and Export Bar */}
-        <div className="p-3 border-b border-charcoal-800 flex flex-wrap items-center justify-between gap-2 bg-charcoal-950">
+        <div className="p-3 border-b border-baku-border flex flex-wrap items-center justify-between gap-2 bg-baku-white">
           <div className="flex items-center gap-2 flex-1 min-w-[200px]">
             <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-baku-neutral" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por teléfono o cupón..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-charcoal-900 border border-charcoal-700 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-fire-500"
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-baku-ivory border border-baku-border text-xs text-baku-carbon placeholder-baku-neutral/60 focus:outline-none focus:border-baku-orange"
               />
             </div>
 
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg bg-charcoal-900 border border-charcoal-700 text-xs text-neutral-300 focus:outline-none focus:border-fire-500"
+              className="px-2.5 py-1.5 rounded-lg bg-baku-ivory border border-baku-border text-xs text-baku-carbon focus:outline-none focus:border-baku-orange"
             >
               <option value="todos">Todos los estados</option>
               <option value="pendiente">Pendientes</option>
@@ -191,17 +183,17 @@ export default function AdminModal({ isOpen, onClose }) {
           <button
             onClick={() => exportLeadsToCSV(leads)}
             disabled={leads.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 text-white text-xs font-semibold border border-charcoal-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-baku-carbon hover:bg-black text-white text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-fire-500" />
-            <span>Descargar CSV (Excel)</span>
+            <Download className="w-3.5 h-3.5 text-baku-orange" />
+            <span>Descargar CSV</span>
           </button>
         </div>
 
         {/* Leads Table / List */}
-        <div className="flex-1 overflow-y-auto p-4 divide-y divide-charcoal-800/80">
+        <div className="flex-1 overflow-y-auto p-4 divide-y divide-baku-border">
           {filteredLeads.length === 0 ? (
-            <div className="text-center py-12 text-neutral-500 text-xs">
+            <div className="text-center py-12 text-baku-neutral text-xs">
               No se han registrado clientes potenciales con los filtros actuales.
             </div>
           ) : (
@@ -209,53 +201,51 @@ export default function AdminModal({ isOpen, onClose }) {
               <div key={lead.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">
+                    <span className="font-extrabold text-baku-carbon text-sm">
                       {lead.whatsapp ? `+52 ${lead.whatsapp}` : 'Sin número ingresado'}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-charcoal-800 border border-fire-500/40 text-fire-400 font-mono font-bold text-[11px]">
+                    <span className="px-2 py-0.5 rounded bg-baku-tint border border-baku-orange/40 text-baku-orange font-mono font-bold text-[11px]">
                       {lead.couponCode}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                         lead.status === 'canjeado'
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
                           : lead.status === 'contactado'
-                          ? 'bg-blue-950/80 text-blue-400 border border-blue-500/40'
-                          : 'bg-amber-950/80 text-amber-400 border border-amber-500/40'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-300'
+                          : 'bg-amber-50 text-amber-700 border border-amber-300'
                       }`}
                     >
                       {lead.status}
                     </span>
                   </div>
 
-                  <p className="text-neutral-400">
-                    <strong className="text-neutral-300">Cena:</strong> {lead.dinnerPreference === 'Otro antojo' ? lead.otherDinner || 'Otro' : lead.dinnerPreference || 'N/A'} • <strong className="text-neutral-300">Presupuesto:</strong> {lead.budget || 'N/A'} • <strong className="text-neutral-300">Ingredientes:</strong> {(lead.ingredients || []).join(', ') || 'N/A'}
+                  <p className="text-baku-neutral">
+                    <strong className="text-baku-carbon font-semibold">Cena:</strong> {lead.dinnerPreference === 'Otro antojo' ? lead.otherDinner || 'Otro' : lead.dinnerPreference || 'N/A'} • <strong className="text-baku-carbon font-semibold">Presupuesto:</strong> {lead.budget || 'N/A'} • <strong className="text-baku-carbon font-semibold">Ingredientes:</strong> {(lead.ingredients || []).join(', ') || 'N/A'}
                   </p>
 
-                  <span className="text-[10px] text-neutral-500 block">
+                  <span className="text-[10px] text-baku-neutral/80 block">
                     Registrado: {lead.formattedDate || lead.createdAt}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  {/* Status Toggle Button */}
                   <select
                     value={lead.status}
                     onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                    className="px-2 py-1 rounded bg-charcoal-800 border border-charcoal-700 text-[11px] text-neutral-200 focus:outline-none"
+                    className="px-2 py-1 rounded bg-baku-ivory border border-baku-border text-[11px] text-baku-carbon focus:outline-none"
                   >
                     <option value="pendiente">Pendiente</option>
                     <option value="contactado">Contactado</option>
                     <option value="canjeado">Canjeado</option>
                   </select>
 
-                  {/* WhatsApp Direct Send Link */}
                   {lead.whatsapp && (
                     <a
                       href={createWhatsAppUrl(lead)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[11px] transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition-colors"
                       title="Enviar menú y cupón personalizado a este contacto"
                     >
                       <WhatsAppIcon className="w-3.5 h-3.5" />
@@ -265,7 +255,7 @@ export default function AdminModal({ isOpen, onClose }) {
 
                   <button
                     onClick={() => handleDelete(lead.id)}
-                    className="p-1.5 rounded bg-charcoal-800 hover:bg-red-950 hover:text-red-400 text-neutral-400 transition-colors"
+                    className="p-1.5 rounded bg-baku-ivory hover:bg-red-50 text-baku-neutral hover:text-baku-red transition-colors border border-baku-border"
                     title="Eliminar registro"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -277,7 +267,7 @@ export default function AdminModal({ isOpen, onClose }) {
         </div>
 
         {/* Footer info */}
-        <div className="px-5 py-3 border-t border-charcoal-800 bg-charcoal-950 flex items-center justify-between text-[11px] text-neutral-500">
+        <div className="px-5 py-3 border-t border-baku-border bg-baku-ivory flex items-center justify-between text-[11px] text-baku-neutral">
           <span>Los datos se guardan de forma segura en este navegador.</span>
           <span>Beneficio: $40 MXN en consumo mayor a $180 MXN</span>
         </div>

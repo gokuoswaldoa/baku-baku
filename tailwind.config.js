@@ -4,63 +4,48 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         baku: {
-          orange: '#FF9A00',
-          red: '#D32F2F',
-          chocolate: '#3E2723',
-          panko: '#E69138',
-          cream: '#FFF8E7',
+          orange: '#FF7A00', // Naranja fuego principal
+          'orange-hover': '#E66E00',
+          'orange-active': '#CC6200',
+          red: '#E53935',    // Rojo pasión (bandana y estados destacados)
+          carbon: '#1E1E1E', // Carbón (encabezados, textos fuertes)
+          ivory: '#F7F2E8',  // Marfil (fondo gastronómico cálido)
+          white: '#FFFFFF',  // Blanco (tarjetas y superficies)
+          neutral: '#6B625D', // Gris neutro (texto secundario y descripciones)
+          border: '#E6DFD5', // Borde sutil para tarjetas
+          tint: '#FFF7EE',   // Fondo sutil al seleccionar
+          subtle: '#EDE6DA', // Separadores y fondos secundarios
         },
-        fire: {
-          50: '#fff9ee',
-          100: '#fff1d6',
-          200: '#ffdfad',
-          300: '#ffc87a',
-          400: '#FFB038',
-          500: '#FF9A00', // Naranja Fuego oficial
-          600: '#D32F2F', // Rojo Carmín oficial
-          700: '#B71C1C',
-          800: '#3E2723', // Marrón Chocolate oficial
-          900: '#231512',
-          950: '#140A08',
-        },
-        charcoal: {
-          950: '#0A0A0C',
-          900: '#111216',
-          850: '#16181F',
-          800: '#1D1F29',
-          700: '#2A2C3A',
-          600: '#3E2723',
-        }
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['Fredoka', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        slogan: ['Montserrat', 'Arial Black', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Manrope', 'Plus Jakarta Sans', 'sans-serif'],
       },
       boxShadow: {
-        'baku-glow': '0 0 25px -4px rgba(255, 154, 0, 0.45)',
-        'baku-pop': '0 4px 0 #3E2723',
-        'fire-sm': '0 0 15px -3px rgba(255, 154, 0, 0.35)',
-        'fire-md': '0 0 25px -5px rgba(255, 154, 0, 0.45)',
-        'fire-lg': '0 0 40px -8px rgba(211, 47, 47, 0.55)',
+        'baku-card': '0 2px 10px -2px rgba(30, 30, 30, 0.05)',
+        'baku-card-hover': '0 6px 18px -4px rgba(30, 30, 30, 0.08)',
+        'baku-selected': '0 0 0 2px #FF7A00, 0 4px 12px -2px rgba(255, 122, 0, 0.15)',
+        'baku-btn': '0 4px 14px -3px rgba(255, 122, 0, 0.4)',
+      },
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.25rem',
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.35s ease-out forwards',
-        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-in': 'fadeIn 0.25s ease-out forwards',
+        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       },
       keyframes: {
         fadeIn: {
-          '0%': { opacity: '0', transform: 'scale(0.98)' },
+          '0%': { opacity: '0', transform: 'scale(0.99)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         }
       }

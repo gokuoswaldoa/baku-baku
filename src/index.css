@@ -3,26 +3,46 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    background-color: #0A0A0C;
-    color: #F3F4F6;
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background-color: #F7F2E8;
+    color: #1E1E1E;
+    font-family: 'Manrope', 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  /* Accessibility: keyboard focus styles */
+  :focus-visible {
+    outline: 2px solid #FF7A00;
+    outline-offset: 2px;
   }
 }
 
-/* Custom glowing effects and clean mobile styles */
-.fire-gradient-text {
-  background: linear-gradient(135deg, #FFF 10%, #FF8143 50%, #FF5A00 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+/* Accessibility: respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-.fire-border-glow {
-  box-shadow: 0 0 20px -5px rgba(255, 90, 0, 0.4);
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-
-.glass-panel {
-  background: rgba(22, 24, 31, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+::-webkit-scrollbar-track {
+  background: #F7F2E8;
+}
+::-webkit-scrollbar-thumb {
+  background: #D8D0C3;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #BDB3A5;
 }

@@ -2,47 +2,58 @@ import React from 'react';
 import BakuLogo from './BakuLogo';
 
 export default function Header({ currentStep, totalSteps, isSubmitted }) {
+  const percentage = Math.round((currentStep / totalSteps) * 100);
+
   return (
-    <header className="w-full pt-4 pb-3 px-4 border-b border-charcoal-800 bg-charcoal-950/85 backdrop-blur-md sticky top-0 z-30 transition-all">
-      <div className="max-w-md mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BakuLogo size="sm" showBadge={false} />
-          <div>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-lg font-display font-black tracking-wider text-baku-cream uppercase drop-shadow-[0_2px_0_#3E2723]"
-                style={{
-                  textShadow: '1.5px 1.5px 0 #3E2723, -1.5px 1.5px 0 #3E2723, 1.5px -1.5px 0 #3E2723, -1.5px -1.5px 0 #3E2723',
-                }}
-              >
-                Baku-Baku
+    <header className="w-full pt-3 pb-2.5 px-4 border-b border-baku-border bg-baku-white/95 backdrop-blur-md sticky top-0 z-30 shadow-[0_2px_8px_rgba(30,30,30,0.03)] transition-all">
+      <div className="max-w-md sm:max-w-xl mx-auto flex items-center justify-between gap-3">
+        {/* Brand identity */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <BakuLogo size="header" />
+          <div className="leading-tight">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-base sm:text-lg font-extrabold text-baku-carbon tracking-tight uppercase font-sans">
+                BAKU-BAKU
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-baku-chocolate border border-baku-red text-baku-orange font-slogan font-black text-[9px] uppercase tracking-widest">
+              <span className="text-[9px] sm:text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-baku-carbon text-baku-orange uppercase">
                 SUSHI & FIRE
               </span>
             </div>
-            <p className="text-[11px] text-neutral-400 font-medium">
-              Bolas de Fuego • Dark Kitchen Local
+            <p className="text-[11px] text-baku-neutral font-medium">
+              Bolas de Sushi Empanizadas • Dark Kitchen Local
             </p>
           </div>
         </div>
 
-        {!isSubmitted && (
-          <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Paso</span>
-            <div className="text-sm font-bold text-baku-orange">
-              {currentStep} <span className="text-neutral-500 font-normal">/ {totalSteps}</span>
+        {/* Step counter */}
+        {!isSubmitted && currentStep > 0 && (
+          <div className="text-right shrink-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-baku-neutral block">
+              Progreso
+            </span>
+            <div className="text-xs sm:text-sm font-extrabold text-baku-carbon">
+              <span className="text-baku-orange">{currentStep}</span>
+              <span className="text-baku-neutral font-medium"> / {totalSteps}</span>
+              <span className="text-[10px] text-baku-neutral ml-1 hidden sm:inline">({percentage}%)</span>
             </div>
           </div>
         )}
       </div>
 
-      {!isSubmitted && (
-        <div className="max-w-md mx-auto mt-2.5">
-          <div className="w-full bg-charcoal-800 h-1.5 rounded-full overflow-hidden">
+      {/* Progress Bar */}
+      {!isSubmitted && currentStep > 0 && (
+        <div className="max-w-md sm:max-w-xl mx-auto mt-2">
+          <div
+            className="w-full bg-baku-subtle h-2 rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={percentage}
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label="Progreso de la encuesta"
+          >
             <div
-              className="bg-gradient-to-r from-baku-red via-baku-orange to-amber-300 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(255,154,0,0.5)]"
-              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              className="bg-baku-orange h-full rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${percentage}%` }}
             />
           </div>
         </div>

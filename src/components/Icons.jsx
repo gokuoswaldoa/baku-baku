@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Bespoke, clean SVGs without any emojis
-export const FlameSphereIcon = ({ className = "w-8 h-8", color = "#FF5A00" }) => (
+export const FlameSphereIcon = ({ className = "w-8 h-8", color = "#FF7A00" }) => (
   <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <defs>
       <radialGradient id="sphereGrad" cx="35%" cy="35%" r="65%">

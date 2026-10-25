@@ -5,7 +5,6 @@ import AdminModal from './components/AdminModal';
 import BakuLogo from './components/BakuLogo';
 import { generateUniqueCoupon, saveLead } from './utils/storage';
 import {
-  FlameSphereIcon,
   TacoIcon,
   PizzaIcon,
   BurgerIcon,
@@ -27,8 +26,8 @@ import {
   Clock,
   ArrowRight,
   Info,
-  Database,
-  Lock
+  Lock,
+  Sparkles
 } from 'lucide-react';
 
 const DINNER_OPTIONS = [
@@ -36,27 +35,27 @@ const DINNER_OPTIONS = [
   { id: 'pizza', label: 'Pizza', desc: 'Clásica, masa delgada o deep dish', icon: PizzaIcon },
   { id: 'burgers', label: 'Hamburguesas / Hot Dogs', desc: 'Carne smashed, tocino o estilo callejero', icon: BurgerIcon },
   { id: 'alitas', label: 'Alitas / Boneless', desc: 'Búfalo, bbq o limón pimienta', icon: WingsIcon },
-  { id: 'otro', label: 'Otro antojo', desc: 'Escribe tu opción favorita', icon: UtensilsIcon },
+  { id: 'otro', label: 'Otro antojo', desc: 'Escribe tu comida preferida', icon: UtensilsIcon },
 ];
 
 const BUDGET_OPTIONS = [
   { id: '50-80', label: '$50 - $80', unit: 'MXN', desc: 'Económico y rápido', badge: 'Casual' },
   { id: '80-120', label: '$80 - $120', unit: 'MXN', desc: 'Cena habitual de fin de semana', badge: 'Popular' },
   { id: '120-150', label: '$120 - $150', unit: 'MXN', desc: 'Antojo especial o combo completo', badge: 'Gourmet' },
-  { id: '150+', label: 'Más de $150', unit: 'MXN', desc: 'Cena abundante / Premium', badge: 'Sin límite' },
+  { id: '150+', label: 'Más de $150', unit: 'MXN', desc: 'Cena abundante / Sin límite', badge: 'Premium' },
 ];
 
 const CONCEPT_OPTIONS = [
   {
     id: 'si-totalmente',
     title: '¡Totalmente! Me encantaría probarlo',
-    desc: 'Buscaba algo diferente y crujiente para pedir los fines de semana.',
+    desc: 'Buscaba una opción crujiente y diferente para pedir los fines de semana.',
     badge: 'Primera opción',
   },
   {
     id: 'tal-vez',
     title: 'Probablemente sí',
-    desc: 'Si el precio es justo y las salsas valen la pena, seguro pido.',
+    desc: 'Si el precio es justo y las salsas complementan bien, seguro pido.',
     badge: 'Curioso',
   },
   {
@@ -69,7 +68,7 @@ const CONCEPT_OPTIONS = [
 
 const INGREDIENTS_OPTIONS = [
   { id: 'surimi', label: 'Surimi / Tampico', desc: 'Clásico aderezo cremoso con ligero toque picante', icon: SushiRollIcon },
-  { id: 'atun-spicy', label: 'Atún spicy', desc: 'Atún marinado en sriracha, ajonjolí y cebollín', icon: PepperIcon },
+  { id: 'atun-spicy', label: 'Atún spicy', desc: 'Atún marinado con sriracha, ajonjolí y cebollín', icon: PepperIcon },
   { id: 'pollo', label: 'Pollo crujiente', desc: 'Pechuga marinada empanizada al estilo panko', icon: WingsIcon },
   { id: 'queso-crema', label: 'Queso crema extra', desc: 'Centro fundente y ultra cremoso', icon: CheeseIcon },
   { id: 'aguacate', label: 'Aguacate fresco', desc: 'Rebanadas de aguacate de primera calidad', icon: AvocadoIcon },
@@ -174,11 +173,9 @@ export default function App() {
     setIsSubmitting(true);
     setValidationError('');
 
-    // Generate unique coupon code for this lead
     const uniqueCode = generateUniqueCoupon(formData.whatsapp);
     setGeneratedCoupon(uniqueCode);
 
-    // Save lead into browser database / external webhook
     await saveLead({
       whatsapp: formData.whatsapp,
       couponCode: uniqueCode,
@@ -193,7 +190,7 @@ export default function App() {
       setIsSubmitting(false);
       setIsSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1200);
+    }, 1100);
   };
 
   const handleReset = () => {
@@ -212,69 +209,84 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-charcoal-950 text-neutral-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-baku-ivory text-baku-carbon flex flex-col font-sans selection:bg-baku-orange selection:text-white">
+      {/* Top Header with official logo & progress bar */}
       <Header currentStep={step} totalSteps={totalSurveySteps} isSubmitted={isSubmitted || step === 0} />
 
-      <main className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col justify-center">
+      {/* Main Container */}
+      <main className="flex-1 w-full max-w-md sm:max-w-xl mx-auto px-4 py-6 sm:py-8 flex flex-col justify-center">
         {isSubmitted ? (
           <SuccessScreen formData={formData} uniqueCoupon={generatedCoupon} onReset={handleReset} />
         ) : step === 0 ? (
-          /* STEP 0: Welcome Hero Screen */
+          /* STEP 0: Welcome Presentation */
           <div className="text-center py-2 animate-fade-in">
-            <div className="mb-4">
-              <BakuLogo size="lg" showBadge={true} />
+            {/* Official Mascot Logo: Red Panda with Headband holding Crispy Sushi Sphere */}
+            <div className="mb-4 flex justify-center">
+              <BakuLogo size="lg" />
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-baku-white border border-baku-border text-baku-carbon text-xs font-bold tracking-wide uppercase shadow-sm mb-3">
+              <span className="w-2 h-2 rounded-full bg-baku-orange" />
+              <span>Validación de Mercado • Dark Kitchen Local</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-baku-carbon tracking-tight mb-2">
               ¿Listo para probar las <span className="text-baku-orange">Bolas de Fuego</span>?
             </h1>
 
-            <p className="text-neutral-300 text-xs sm:text-sm leading-relaxed mb-6 px-2">
-              Estamos preparando la apertura a puerta cerrada de <strong className="text-white">Baku Baku</strong> en la colonia:
-              sushi empanizado crujiente en forma de esfera, relleno de ingredientes de primera calidad y bañado en salsas secretas.
+            <p className="text-baku-neutral text-sm leading-relaxed mb-6 max-w-md mx-auto">
+              Estamos preparando la apertura de <strong className="text-baku-carbon font-bold">BAKU-BAKU SUSHI & FIRE</strong> en la colonia:
+              bolas de sushi empanizadas, doradas y ultra crujientes con entrega directa a domicilio.
             </p>
 
-            <div className="grid grid-cols-2 gap-3 mb-8 text-left">
-              <div className="p-3.5 rounded-xl bg-charcoal-900 border border-charcoal-800 flex items-start gap-3">
-                <Clock className="w-5 h-5 text-fire-500 shrink-0 mt-0.5" />
+            {/* Quick Benefits Cards */}
+            <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+              <div className="p-3.5 rounded-2xl bg-baku-white border border-baku-border shadow-baku-card flex items-start gap-3">
+                <Clock className="w-5 h-5 text-baku-orange shrink-0 mt-0.5" />
                 <div>
-                  <h2 className="text-xs font-bold text-white">Solo 1 Minuto</h2>
-                  <p className="text-[11px] text-neutral-400">5 preguntas breves para definir el menú.</p>
+                  <h2 className="text-xs font-extrabold text-baku-carbon">Solo 1 Minuto</h2>
+                  <p className="text-[11px] text-baku-neutral mt-0.5">5 preguntas breves para definir el menú oficial.</p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-charcoal-900 border border-fire-500/40 flex items-start gap-3 bg-gradient-to-br from-charcoal-900 to-charcoal-850">
-                <BadgePercent className="w-5 h-5 text-fire-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-2xl bg-baku-white border border-baku-orange/40 shadow-baku-card flex items-start gap-3">
+                <BadgePercent className="w-5 h-5 text-baku-red shrink-0 mt-0.5" />
                 <div>
-                  <h2 className="text-xs font-bold text-fire-400">Beneficio Fundador</h2>
-                  <p className="text-[11px] text-neutral-400">$40 MXN de regalo en tu primer pedido.</p>
+                  <h2 className="text-xs font-extrabold text-baku-red">Beneficio Fundador</h2>
+                  <p className="text-[11px] text-baku-neutral mt-0.5">$40 MXN de descuento en tu primer pedido.</p>
                 </div>
               </div>
             </div>
 
+            {/* Start Button */}
             <button
               onClick={() => {
                 setStep(1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="w-full py-4 px-6 rounded-2xl bg-fire-500 hover:bg-fire-600 text-white font-bold text-base shadow-fire-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
+              className="w-full py-4 px-6 rounded-2xl bg-baku-orange hover:bg-baku-orange-hover text-white font-extrabold text-base shadow-baku-btn transition-all active:scale-[0.98] flex items-center justify-center gap-2 group cursor-pointer"
             >
               <span>Comenzar Encuesta</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </button>
+
+            <p className="text-[11px] text-baku-neutral mt-3">
+              Tus respuestas son anónimas y nos ayudan a definir horarios, recetas y cobertura en la colonia.
+            </p>
           </div>
         ) : (
+          /* MULTI-STEP QUESTIONS */
           <div className="animate-slide-up">
-            {/* Paso 1: Selección única */}
+            {/* Step 1: Single choice - Cena de fin de semana */}
             {step === 1 && (
               <div className="space-y-4">
                 <div className="mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fire-500">Pregunta 1 de 5</span>
-                  <h2 className="text-xl font-bold text-white mt-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-baku-orange">Pregunta 1 de 5</span>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-baku-carbon mt-1">
                     ¿Qué sueles pedir para cenar los fines de semana?
                   </h2>
-                  <p className="text-xs text-neutral-400 mt-1">
-                    Selecciona tu comida favorita al pedir cena en la colonia.
+                  <p className="text-xs sm:text-sm text-baku-neutral mt-1">
+                    Selecciona tu comida favorita al pedir cena a domicilio.
                   </p>
                 </div>
 
@@ -288,31 +300,32 @@ export default function App() {
                         key={item.id}
                         type="button"
                         onClick={() => handleDinnerSelect(item.label)}
-                        className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center gap-3.5 ${
+                        className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border transition-all flex items-center gap-3.5 cursor-pointer ${
                           isSelected
-                            ? 'bg-fire-500/10 border-fire-500 shadow-fire-sm text-white'
-                            : 'bg-charcoal-900/90 border-charcoal-800 text-neutral-300 hover:border-charcoal-700 hover:bg-charcoal-850'
+                            ? 'bg-baku-tint border-baku-orange shadow-baku-selected text-baku-carbon'
+                            : 'bg-baku-white border-baku-border text-baku-carbon hover:border-baku-neutral/40 hover:bg-white shadow-baku-card'
                         }`}
                       >
                         <div
                           className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected ? 'bg-fire-500 text-white' : 'bg-charcoal-800 text-neutral-400'
+                            isSelected ? 'bg-baku-orange text-white' : 'bg-baku-subtle text-baku-carbon'
                           }`}
                         >
                           <IconComponent className="w-5 h-5" />
                         </div>
+
                         <div className="flex-1">
-                          <div className="font-semibold text-sm flex items-center justify-between">
-                            <span className={isSelected ? 'text-white' : 'text-neutral-200'}>{item.label}</span>
+                          <div className="font-bold text-sm sm:text-base flex items-center justify-between">
+                            <span className={isSelected ? 'text-baku-carbon' : 'text-baku-carbon'}>{item.label}</span>
                             <div
-                              className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                isSelected ? 'border-fire-500 bg-fire-500' : 'border-neutral-600'
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                                isSelected ? 'border-baku-orange bg-baku-orange' : 'border-baku-neutral/50'
                               }`}
                             >
                               {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                             </div>
                           </div>
-                          <p className="text-xs text-neutral-400 mt-0.5">{item.desc}</p>
+                          <p className="text-xs text-baku-neutral mt-0.5">{item.desc}</p>
                         </div>
                       </button>
                     );
@@ -321,7 +334,7 @@ export default function App() {
 
                 {formData.dinnerPreference === 'Otro antojo' && (
                   <div className="pt-2 animate-fade-in">
-                    <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+                    <label className="block text-xs font-bold text-baku-carbon mb-1.5">
                       ¿Qué platillo es tu favorito?
                     </label>
                     <input
@@ -329,27 +342,27 @@ export default function App() {
                       value={formData.otherDinner}
                       onChange={(e) => setFormData({ ...formData, otherDinner: e.target.value })}
                       placeholder="Ej. Tortas ahogadas, crepas, comida china..."
-                      className="w-full px-4 py-3 rounded-xl bg-charcoal-900 border border-fire-500/50 text-white placeholder-neutral-500 text-sm focus:outline-none focus:ring-2 focus:ring-fire-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl bg-baku-white border border-baku-border text-baku-carbon placeholder-baku-neutral/60 text-sm focus:outline-none focus:border-baku-orange focus:ring-2 focus:ring-baku-orange/20 transition-all shadow-sm"
                     />
                   </div>
                 )}
               </div>
             )}
 
-            {/* Paso 2: Rango de precio */}
+            {/* Step 2: Rango de precio */}
             {step === 2 && (
               <div className="space-y-4">
                 <div className="mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fire-500">Pregunta 2 de 5</span>
-                  <h2 className="text-xl font-bold text-white mt-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-baku-orange">Pregunta 2 de 5</span>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-baku-carbon mt-1">
                     ¿Cuánto sueles gastar por persona en una cena de fin de semana?
                   </h2>
-                  <p className="text-xs text-neutral-400 mt-1">
+                  <p className="text-xs sm:text-sm text-baku-neutral mt-1">
                     Considerando platillo principal y bebida o complemento.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-2.5">
                   {BUDGET_OPTIONS.map((item) => {
                     const isSelected = formData.budget === item.label;
 
@@ -358,33 +371,33 @@ export default function App() {
                         key={item.id}
                         type="button"
                         onClick={() => handleBudgetSelect(item.label)}
-                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between ${
+                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                           isSelected
-                            ? 'bg-fire-500/10 border-fire-500 shadow-fire-sm'
-                            : 'bg-charcoal-900 border-charcoal-800 hover:border-charcoal-700 hover:bg-charcoal-850'
+                            ? 'bg-baku-tint border-baku-orange shadow-baku-selected'
+                            : 'bg-baku-white border-baku-border hover:border-baku-neutral/40 hover:bg-white shadow-baku-card'
                         }`}
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-base font-extrabold text-white">{item.label}</span>
-                            <span className="text-xs font-medium text-neutral-400">{item.unit}</span>
+                            <span className="text-base font-extrabold text-baku-carbon">{item.label}</span>
+                            <span className="text-xs font-semibold text-baku-neutral">{item.unit}</span>
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                                isSelected ? 'bg-fire-500 text-white' : 'bg-charcoal-800 text-neutral-400'
+                              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                isSelected ? 'bg-baku-orange text-white' : 'bg-baku-subtle text-baku-carbon'
                               }`}
                             >
                               {item.badge}
                             </span>
                           </div>
-                          <p className="text-xs text-neutral-400">{item.desc}</p>
+                          <p className="text-xs text-baku-neutral">{item.desc}</p>
                         </div>
 
                         <div
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ml-3 ${
-                            isSelected ? 'border-fire-500 bg-fire-500' : 'border-neutral-600'
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ml-3 transition-colors ${
+                            isSelected ? 'border-baku-orange bg-baku-orange' : 'border-baku-neutral/50'
                           }`}
                         >
-                          {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
                       </button>
                     );
@@ -393,28 +406,31 @@ export default function App() {
               </div>
             )}
 
-            {/* Paso 3: Validación visual del concepto */}
+            {/* Step 3: Concept visual validation */}
             {step === 3 && (
               <div className="space-y-4">
                 <div className="mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fire-500">Pregunta 3 de 5</span>
-                  <h2 className="text-xl font-bold text-white mt-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-baku-orange">Pregunta 3 de 5</span>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-baku-carbon mt-1">
                     Si abriera una opción de Sushi Empanizado en Bola (Bolas de Fuego) a domicilio en la colonia, ¿te animarías a probarlo?
                   </h2>
-                  <p className="text-xs text-neutral-400 mt-1">
-                    Esferas crujientes rellenas de arroz de sushi sazonado, proteína y queso crema derretido.
+                  <p className="text-xs sm:text-sm text-baku-neutral mt-1">
+                    Esferas crujientes rellenas de arroz sazonado, proteína gourmet y queso crema fundido.
                   </p>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-charcoal-900/80 border border-baku-orange/40 flex items-center gap-3">
-                  <BakuLogo size="sm" showBadge={false} />
+                {/* Concept Banner with Mascot */}
+                <div className="p-3.5 rounded-2xl bg-baku-white border border-baku-border shadow-baku-card flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-baku-tint border border-baku-orange/30 flex items-center justify-center shrink-0 overflow-hidden">
+                    <img src="/baku-logo.webp" alt="Panda Rojo" className="w-10 h-10 object-contain" />
+                  </div>
                   <div className="text-xs">
-                    <span className="font-bold text-white block">Concepto Baku Baku:</span>
-                    <span className="text-neutral-400">Sushi frito en esfera (Bolas de Fuego), fácil de comer sin cubiertos ni desastres.</span>
+                    <span className="font-extrabold text-baku-carbon block">Concepto BAKU-BAKU:</span>
+                    <span className="text-baku-neutral">Sushi frito en esfera, fácil de comer sin cubiertos ni desastres, con empanizado panko ultra crujiente.</span>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {CONCEPT_OPTIONS.map((opt) => {
                     const isSelected = formData.trySushi === opt.title;
 
@@ -423,25 +439,25 @@ export default function App() {
                         key={opt.id}
                         type="button"
                         onClick={() => handleConceptSelect(opt.title)}
-                        className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                        className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-fire-500/10 border-fire-500 shadow-fire-sm'
-                            : 'bg-charcoal-900 border-charcoal-800 hover:border-charcoal-700 hover:bg-charcoal-850'
+                            ? 'bg-baku-tint border-baku-orange shadow-baku-selected'
+                            : 'bg-baku-white border-baku-border hover:border-baku-neutral/40 hover:bg-white shadow-baku-card'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`text-sm font-bold ${isSelected ? 'text-fire-400' : 'text-white'}`}>
+                          <span className={`text-sm font-extrabold ${isSelected ? 'text-baku-orange' : 'text-baku-carbon'}`}>
                             {opt.title}
                           </span>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isSelected ? 'bg-fire-500 text-white' : 'bg-charcoal-800 text-neutral-400'
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                              isSelected ? 'bg-baku-orange text-white' : 'bg-baku-subtle text-baku-carbon'
                             }`}
                           >
                             {opt.badge}
                           </span>
                         </div>
-                        <p className="text-xs text-neutral-400 leading-relaxed">{opt.desc}</p>
+                        <p className="text-xs text-baku-neutral leading-relaxed">{opt.desc}</p>
                       </button>
                     );
                   })}
@@ -449,21 +465,21 @@ export default function App() {
               </div>
             )}
 
-            {/* Paso 4: Selección múltiple de ingredientes */}
+            {/* Step 4: Multiple choice - Ingredientes */}
             {step === 4 && (
               <div className="space-y-4">
                 <div className="mb-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-fire-500">Pregunta 4 de 5</span>
-                    <span className="text-xs font-semibold text-neutral-400">
+                    <span className="text-xs font-bold uppercase tracking-wider text-baku-orange">Pregunta 4 de 5</span>
+                    <span className="text-xs font-bold text-baku-neutral bg-baku-white px-2 py-0.5 rounded-md border border-baku-border">
                       {formData.ingredients.length} seleccionados
                     </span>
                   </div>
-                  <h2 className="text-xl font-bold text-white mt-1">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-baku-carbon mt-1">
                     ¿Qué ingredientes te llaman más la atención?
                   </h2>
-                  <p className="text-xs text-neutral-400 mt-1">
-                    Puedes elegir todas las opciones que te gustaría ver en el menú.
+                  <p className="text-xs sm:text-sm text-baku-neutral mt-1">
+                    Puedes elegir todas las opciones que te gustaría ver en nuestro menú.
                   </p>
                 </div>
 
@@ -477,28 +493,28 @@ export default function App() {
                         key={item.id}
                         type="button"
                         onClick={() => handleIngredientToggle(item.label)}
-                        className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center gap-3.5 ${
+                        className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border transition-all flex items-center gap-3.5 cursor-pointer ${
                           isChecked
-                            ? 'bg-fire-500/10 border-fire-500 shadow-fire-sm text-white'
-                            : 'bg-charcoal-900 border-charcoal-800 text-neutral-300 hover:border-charcoal-700 hover:bg-charcoal-850'
+                            ? 'bg-baku-tint border-baku-orange shadow-baku-selected text-baku-carbon'
+                            : 'bg-baku-white border-baku-border text-baku-carbon hover:border-baku-neutral/40 hover:bg-white shadow-baku-card'
                         }`}
                       >
                         <div
                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                            isChecked ? 'bg-fire-500 text-white' : 'bg-charcoal-800 text-neutral-400'
+                            isChecked ? 'bg-baku-orange text-white' : 'bg-baku-subtle text-baku-carbon'
                           }`}
                         >
                           <IconComp className="w-5 h-5" />
                         </div>
 
                         <div className="flex-1">
-                          <div className="font-semibold text-sm flex items-center justify-between">
-                            <span className={isChecked ? 'text-white' : 'text-neutral-200'}>{item.label}</span>
+                          <div className="font-bold text-sm flex items-center justify-between">
+                            <span className="text-baku-carbon">{item.label}</span>
                             <div
                               className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
                                 isChecked
-                                  ? 'border-fire-500 bg-fire-500 text-white'
-                                  : 'border-neutral-600 bg-charcoal-950'
+                                  ? 'border-baku-orange bg-baku-orange text-white'
+                                  : 'border-baku-neutral/50 bg-baku-white'
                               }`}
                             >
                               {isChecked && (
@@ -508,7 +524,7 @@ export default function App() {
                               )}
                             </div>
                           </div>
-                          <p className="text-xs text-neutral-400 mt-0.5">{item.desc}</p>
+                          <p className="text-xs text-baku-neutral mt-0.5">{item.desc}</p>
                         </div>
                       </button>
                     );
@@ -517,36 +533,34 @@ export default function App() {
               </div>
             )}
 
-            {/* Paso 5: WhatsApp y Beneficio Fundador */}
+            {/* Step 5: WhatsApp y Beneficio Fundador */}
             {step === 5 && (
               <div className="space-y-4">
                 <div className="mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fire-500">Paso Final</span>
-                  <h2 className="text-xl font-bold text-white mt-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-baku-orange">Paso Final</span>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-baku-carbon mt-1">
                     Beneficio Exclusivo de Fundador
                   </h2>
                 </div>
 
-                <div className="rounded-2xl bg-gradient-to-b from-charcoal-900 to-charcoal-850 border-2 border-fire-500/60 p-5 shadow-fire-md relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-fire-500/10 rounded-bl-full pointer-events-none" />
-
+                <div className="rounded-2xl bg-baku-white border-2 border-baku-orange/50 p-5 shadow-baku-card relative overflow-hidden">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="px-2.5 py-1 rounded-md bg-fire-500 text-white text-xs font-black tracking-wider uppercase">
+                    <span className="px-2.5 py-1 rounded-md bg-baku-red text-white text-xs font-extrabold tracking-wider uppercase">
                       $40 MXN DESC.
                     </span>
-                    <span className="text-xs text-neutral-300 font-semibold">
+                    <span className="text-xs text-baku-carbon font-extrabold">
                       Comunidad Fundadora
                     </span>
                   </div>
 
-                  <label className="block text-sm font-bold text-white mb-2 leading-relaxed">
+                  <label className="block text-sm font-bold text-baku-carbon mb-2 leading-relaxed">
                     ¡Gracias por ayudarnos a definir el menú! Déjanos tu número de WhatsApp y te enviaremos tu beneficio de fundador: $40 MXN de descuento en tu primer pedido mayor a $180. (Beneficio exclusivo para quienes respondieron la encuesta).
                   </label>
 
                   <div className="relative mt-4">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
-                      <WhatsAppIcon className="w-5 h-5 text-emerald-500" />
-                      <span className="ml-2 text-xs font-semibold text-neutral-400 border-r border-charcoal-700 pr-2.5">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-baku-neutral">
+                      <WhatsAppIcon className="w-5 h-5 text-emerald-600" />
+                      <span className="ml-2 text-xs font-extrabold text-baku-carbon border-r border-baku-border pr-2.5">
                         +52
                       </span>
                     </div>
@@ -555,36 +569,37 @@ export default function App() {
                       value={formData.whatsapp}
                       onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value.replace(/[^0-9]/g, '').slice(0, 10) })}
                       placeholder="10 dígitos (ej. 55 1234 5678)"
-                      className="w-full pl-24 pr-4 py-3.5 rounded-xl bg-charcoal-950 border border-charcoal-700 text-white placeholder-neutral-500 text-sm font-medium tracking-wide focus:outline-none focus:border-fire-500 focus:ring-1 focus:ring-fire-500 transition-all"
+                      className="w-full pl-24 pr-4 py-3.5 rounded-xl bg-white border border-baku-border text-baku-carbon placeholder-baku-neutral/60 text-sm font-semibold tracking-wide focus:outline-none focus:border-baku-orange focus:ring-2 focus:ring-baku-orange/20 transition-all shadow-sm"
                     />
                   </div>
 
-                  <div className="mt-4 flex items-start gap-2 text-[11px] text-neutral-400">
-                    <ShieldCheck className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
-                    <span>Tu número se asociará a un código de cupón único. Cero spam, solo recibirás el menú y aviso cuando encendamos la cocina.</span>
+                  <div className="mt-4 flex items-start gap-2 text-[11px] text-baku-neutral">
+                    <ShieldCheck className="w-4 h-4 text-baku-neutral shrink-0 mt-0.5" />
+                    <span>Tu número se asociará a un código único de fundador. Cero spam, únicamente recibirás el menú y aviso de apertura.</span>
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Validation alert */}
             {validationError && (
-              <div className="mt-4 p-3 rounded-xl bg-red-950/60 border border-red-500/50 text-red-200 text-xs flex items-center gap-2 animate-fade-in">
-                <Info className="w-4 h-4 text-red-400 shrink-0" />
+              <div className="mt-4 p-3.5 rounded-xl bg-red-50 border border-baku-red/40 text-baku-red text-xs font-medium flex items-center gap-2 animate-fade-in" role="alert">
+                <Info className="w-4 h-4 text-baku-red shrink-0" />
                 <span>{validationError}</span>
               </div>
             )}
 
             {/* Navigation buttons */}
-            <div className="mt-8 pt-4 border-t border-charcoal-850 flex items-center gap-3">
+            <div className="mt-8 pt-4 border-t border-baku-border flex items-center gap-3">
               {step > 1 && (
                 <button
                   type="button"
                   onClick={prevStep}
                   disabled={isSubmitting}
-                  className="py-3.5 px-4 rounded-xl bg-charcoal-900 hover:bg-charcoal-850 text-neutral-300 font-semibold text-sm border border-charcoal-800 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                  className="py-3 px-4 rounded-xl bg-baku-white hover:bg-baku-subtle text-baku-carbon font-extrabold text-sm border border-baku-border shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  <span>Atrás</span>
+                  <span>Anterior</span>
                 </button>
               )}
 
@@ -592,9 +607,9 @@ export default function App() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="flex-1 py-3.5 px-5 rounded-xl bg-fire-500 hover:bg-fire-600 text-white font-bold text-sm shadow-fire-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
+                  className="flex-1 py-3.5 px-6 rounded-xl bg-baku-orange hover:bg-baku-orange-hover text-white font-extrabold text-sm shadow-baku-btn transition-all active:scale-[0.98] flex items-center justify-center gap-2 group cursor-pointer"
                 >
-                  <span>Siguiente</span>
+                  <span>Continuar</span>
                   <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                 </button>
               ) : (
@@ -602,7 +617,7 @@ export default function App() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 py-4 px-6 rounded-xl bg-gradient-to-r from-fire-600 via-fire-500 to-amber-500 hover:from-fire-500 hover:to-amber-400 text-white font-bold text-sm shadow-fire-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="flex-1 py-4 px-6 rounded-xl bg-baku-orange hover:bg-baku-orange-hover text-white font-extrabold text-sm shadow-baku-btn transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -623,12 +638,12 @@ export default function App() {
       </main>
 
       {/* Footer with Discreet Admin Access */}
-      <footer className="w-full py-4 text-center border-t border-charcoal-900 text-xs text-neutral-500">
-        <div className="max-w-md mx-auto px-4 flex items-center justify-between">
-          <span>Baku Baku • Dark Kitchen Local</span>
+      <footer className="w-full py-4 text-center border-t border-baku-border text-xs text-baku-neutral bg-baku-white/50">
+        <div className="max-w-md sm:max-w-xl mx-auto px-4 flex items-center justify-between">
+          <span className="font-medium">BAKU-BAKU SUSHI & FIRE • Dark Kitchen Local</span>
           <button
             onClick={() => setIsAdminOpen(true)}
-            className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-fire-400 transition-colors py-1 px-2 rounded hover:bg-charcoal-900"
+            className="inline-flex items-center gap-1 text-[11px] text-baku-neutral hover:text-baku-orange transition-colors py-1 px-2 rounded hover:bg-baku-white border border-transparent hover:border-baku-border"
             title="Abrir base de datos de fundadores"
           >
             <Lock className="w-3 h-3" />
