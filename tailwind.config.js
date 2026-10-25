@@ -8,18 +8,25 @@ export default {
   theme: {
     extend: {
       colors: {
+        baku: {
+          orange: '#FF9A00',
+          red: '#D32F2F',
+          chocolate: '#3E2723',
+          panko: '#E69138',
+          cream: '#FFF8E7',
+        },
         fire: {
-          50: '#fff5ee',
-          100: '#ffe8d7',
-          200: '#ffd0b0',
-          300: '#ffb07f',
-          400: '#ff8143',
-          500: '#FF5A00',
-          600: '#e54700',
-          700: '#ba3202',
-          800: '#942909',
-          900: '#78240c',
-          950: '#410f04',
+          50: '#fff9ee',
+          100: '#fff1d6',
+          200: '#ffdfad',
+          300: '#ffc87a',
+          400: '#FFB038',
+          500: '#FF9A00', // Naranja Fuego oficial
+          600: '#D32F2F', // Rojo Carmín oficial
+          700: '#B71C1C',
+          800: '#3E2723', // Marrón Chocolate oficial
+          900: '#231512',
+          950: '#140A08',
         },
         charcoal: {
           950: '#0A0A0C',
@@ -27,16 +34,20 @@ export default {
           850: '#16181F',
           800: '#1D1F29',
           700: '#2A2C3A',
-          600: '#3D4052',
+          600: '#3E2723',
         }
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Fredoka', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        slogan: ['Montserrat', 'Arial Black', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'fire-sm': '0 0 15px -3px rgba(255, 90, 0, 0.3)',
-        'fire-md': '0 0 25px -5px rgba(255, 90, 0, 0.45)',
-        'fire-lg': '0 0 40px -8px rgba(255, 90, 0, 0.55)',
+        'baku-glow': '0 0 25px -4px rgba(255, 154, 0, 0.45)',
+        'baku-pop': '0 4px 0 #3E2723',
+        'fire-sm': '0 0 15px -3px rgba(255, 154, 0, 0.35)',
+        'fire-md': '0 0 25px -5px rgba(255, 154, 0, 0.45)',
+        'fire-lg': '0 0 40px -8px rgba(211, 47, 47, 0.55)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

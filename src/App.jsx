@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from './components/Header';
 import SuccessScreen from './components/SuccessScreen';
 import AdminModal from './components/AdminModal';
+import BakuLogo from './components/BakuLogo';
 import { generateUniqueCoupon, saveLead } from './utils/storage';
 import {
   FlameSphereIcon,
@@ -219,24 +220,16 @@ export default function App() {
           <SuccessScreen formData={formData} uniqueCoupon={generatedCoupon} onReset={handleReset} />
         ) : step === 0 ? (
           /* STEP 0: Welcome Hero Screen */
-          <div className="text-center py-4 animate-fade-in">
-            <div className="relative inline-block mb-6">
-              <div className="absolute inset-0 bg-fire-500/20 blur-2xl rounded-full" />
-              <div className="relative w-24 h-24 mx-auto rounded-3xl bg-charcoal-900 border-2 border-fire-500/60 p-4 shadow-fire-md flex items-center justify-center">
-                <FlameSphereIcon className="w-16 h-16" />
-              </div>
+          <div className="text-center py-2 animate-fade-in">
+            <div className="mb-4">
+              <BakuLogo size="lg" showBadge={true} />
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fire-500/10 border border-fire-500/30 text-fire-400 text-xs font-bold tracking-wide uppercase mb-3">
-              <Flame className="w-3.5 h-3.5 text-fire-500" />
-              Baku Baku • Dark Kitchen Local
-            </div>
-
-            <h1 className="text-3xl font-extrabold text-white tracking-tight mb-3">
-              ¿Listo para probar las <span className="text-fire-500">Bolas de Fuego</span>?
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2.5">
+              ¿Listo para probar las <span className="text-baku-orange">Bolas de Fuego</span>?
             </h1>
 
-            <p className="text-neutral-300 text-sm leading-relaxed mb-6 px-2">
+            <p className="text-neutral-300 text-xs sm:text-sm leading-relaxed mb-6 px-2">
               Estamos preparando la apertura a puerta cerrada de <strong className="text-white">Baku Baku</strong> en la colonia:
               sushi empanizado crujiente en forma de esfera, relleno de ingredientes de primera calidad y bañado en salsas secretas.
             </p>
@@ -413,10 +406,8 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-charcoal-900/80 border border-fire-500/30 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-fire-500/20 border border-fire-500/40 flex items-center justify-center shrink-0">
-                    <FlameSphereIcon className="w-6 h-6" />
-                  </div>
+                <div className="p-3 rounded-2xl bg-charcoal-900/80 border border-baku-orange/40 flex items-center gap-3">
+                  <BakuLogo size="sm" showBadge={false} />
                   <div className="text-xs">
                     <span className="font-bold text-white block">Concepto Baku Baku:</span>
                     <span className="text-neutral-400">Sushi frito en esfera (Bolas de Fuego), fácil de comer sin cubiertos ni desastres.</span>

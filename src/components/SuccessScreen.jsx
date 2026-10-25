@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FlameSphereIcon, WhatsAppIcon } from './Icons';
+import BakuLogo from './BakuLogo';
+import { WhatsAppIcon } from './Icons';
 import { CheckCircle2, Copy, Check, Utensils, Tag, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export default function SuccessScreen({ formData, uniqueCoupon, onReset }) {
@@ -21,13 +22,10 @@ export default function SuccessScreen({ formData, uniqueCoupon, onReset }) {
     <div className="max-w-md mx-auto px-4 py-6 animate-slide-up">
       {/* Visual Header */}
       <div className="relative text-center mb-6">
-        <div className="absolute inset-0 -top-8 bg-fire-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute inset-0 -top-8 bg-baku-orange/10 blur-3xl rounded-full pointer-events-none" />
         
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-tr from-charcoal-900 to-charcoal-800 border-2 border-fire-500 shadow-fire-md mb-4 relative">
-          <FlameSphereIcon className="w-12 h-12" />
-          <div className="absolute -bottom-1 -right-1 bg-fire-500 text-white rounded-full p-1 border-2 border-charcoal-950">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
+        <div className="mb-3">
+          <BakuLogo size="md" showBadge={false} />
         </div>
 
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
