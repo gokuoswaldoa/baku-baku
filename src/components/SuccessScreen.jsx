@@ -14,7 +14,8 @@ export default function SuccessScreen({ formData, uniqueCoupon, onReset }) {
   };
 
   const shareText = encodeURIComponent(
-    `Descubrí BAKU-BAKU SUSHI & FIRE, el nuevo concepto de bolas de sushi empanizadas a domicilio en la colonia. Responde su breve encuesta y recibe $40 MXN de descuento en tu primer pedido mayor a $180.`
+    `Descubrí BAKU-BAKU SUSHI & FIRE, el nuevo concepto de bolas de sushi empanizadas a domicilio en la colonia. Responde su breve encuesta y recibe $40 MXN de descuento en tu primer pedido mayor a $180.
+    https://baku-baku.vercel.app/`
   );
   const whatsappShareUrl = `https://api.whatsapp.com/send?text=${shareText}`;
 
