@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #0A0A0C;
+    color: #F3F4F6;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+/* Custom glowing effects and clean mobile styles */
+.fire-gradient-text {
+  background: linear-gradient(135deg, #FFF 10%, #FF8143 50%, #FF5A00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.fire-border-glow {
+  box-shadow: 0 0 20px -5px rgba(255, 90, 0, 0.4);
+}
+
+.glass-panel {
+  background: rgba(22, 24, 31, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
