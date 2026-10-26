@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   getStoredLeads,
   updateLeadStatus,
@@ -63,6 +64,7 @@ export default function AdminModal({ isOpen, onClose }) {
 
   const totalWithPhone = leads.filter((l) => l.whatsapp).length;
   const totalRedeemed = leads.filter((l) => l.status === 'canjeado').length;
+  const surveyUrl = `${window.location.origin}/`;
 
   const createWhatsAppUrl = (lead) => {
     const phone = (lead.whatsapp || '').replace(/[^0-9]/g, '');
@@ -151,6 +153,29 @@ export default function AdminModal({ isOpen, onClose }) {
           <div className="p-3 rounded-xl bg-white border border-baku-border shadow-sm">
             <span className="text-xs text-baku-neutral font-semibold block mb-0.5">Cupones Canjeados</span>
             <span className="text-xl font-black text-baku-orange">{totalRedeemed}</span>
+          </div>
+        </div>
+
+        <div className="mx-4 mt-4 rounded-2xl border border-baku-orange/40 bg-baku-tint p-4 flex flex-col sm:flex-row items-center gap-4">
+          <div className="shrink-0 rounded-xl bg-white p-2 shadow-sm">
+            <QRCodeSVG
+              value={surveyUrl}
+              size={132}
+              bgColor="#ffffff"
+              fgColor="#1f1f1f"
+              level="M"
+              includeMargin
+              title="Código QR para abrir la encuesta BAKU-BAKU"
+            />
+          </div>
+          <div className="text-center sm:text-left">
+            <h3 className="text-sm font-extrabold text-baku-carbon">Comparte la encuesta</h3>
+            <p className="mt-1 text-xs leading-relaxed text-baku-neutral">
+              Muestra este código desde tu teléfono para que tus vecinos lo escaneen y entren directamente a la encuesta.
+            </p>
+            <p className="mt-2 break-all rounded-lg bg-white/70 px-2.5 py-1.5 font-mono text-[10px] text-baku-carbon">
+              {surveyUrl}
+            </p>
           </div>
         </div>
 
