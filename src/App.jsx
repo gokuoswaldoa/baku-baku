@@ -147,6 +147,11 @@ export default function App() {
         setValidationError('Selecciona al menos un ingrediente que te llame la atención.');
         return false;
       }
+    } else if (step === 5) {
+      if (!/^\d{10}$/.test(formData.whatsapp)) {
+        setValidationError('Ingresa un número de WhatsApp válido de 10 dígitos para recibir tu cupón.');
+        return false;
+      }
     }
     setValidationError('');
     return true;
@@ -175,15 +180,22 @@ export default function App() {
     const uniqueCode = generateUniqueCoupon(formData.whatsapp);
     setGeneratedCoupon(uniqueCode);
 
-    await saveLead({
-      whatsapp: formData.whatsapp,
-      couponCode: uniqueCode,
-      dinnerPreference: formData.dinnerPreference,
-      otherDinner: formData.otherDinner,
-      budget: formData.budget,
-      trySushi: formData.trySushi,
-      ingredients: formData.ingredients,
-    });
+    try {
+      await saveLead({
+        whatsapp: formData.whatsapp,
+        couponCode: uniqueCode,
+        dinnerPreference: formData.dinnerPreference,
+        otherDinner: formData.otherDinner,
+        budget: formData.budget,
+        trySushi: formData.trySushi,
+        ingredients: formData.ingredients,
+      });
+    } catch (error) {
+      setIsSubmitting(false);
+      setGeneratedCoupon('');
+      setValidationError(error.message);
+      return;
+    }
 
     setTimeout(() => {
       setIsSubmitting(false);

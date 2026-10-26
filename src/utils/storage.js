@@ -14,6 +14,10 @@ const STORAGE_KEY = 'baku_baku_leads';
 const CONFIG_KEY = 'baku_baku_config';
 const DEPLOYMENT_WEBHOOK_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || '';
 
+function normalizePhone(phone = '') {
+  return phone.replace(/\D/g, '').slice(-10);
+}
+
 // Retrieve all leads from browser database
 export function getStoredLeads() {
   try {
@@ -29,6 +33,15 @@ export function getStoredLeads() {
 export async function saveLead(leadData) {
   try {
     const existing = getStoredLeads();
+    const phone = normalizePhone(leadData.whatsapp);
+    if (!phone) {
+      throw new Error('El WhatsApp es obligatorio para registrar la respuesta.');
+    }
+
+    if (existing.some((lead) => normalizePhone(lead.whatsapp) === phone)) {
+      throw new Error('Este número de WhatsApp ya tiene una respuesta registrada.');
+    }
+
     const newLead = {
       id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
       createdAt: new Date().toISOString(),
@@ -39,6 +52,7 @@ export async function saveLead(leadData) {
       status: 'pendiente', // 'pendiente' | 'contactado' | 'canjeado'
       benefit: '$40 MXN de descuento en compra > $180 MXN',
       ...leadData,
+      whatsapp: phone,
     };
 
     const updated = [newLead, ...existing];
@@ -47,18 +61,32 @@ export async function saveLead(leadData) {
     // Optional webhook trigger if Google Sheet or external API is configured
     const webhookUrl = getWebhookUrl();
     if (webhookUrl) {
+      const payload = new URLSearchParams({
+        id: newLead.id,
+        createdAt: newLead.createdAt,
+        whatsapp: newLead.whatsapp,
+        couponCode: newLead.couponCode || '',
+        status: newLead.status,
+        benefit: newLead.benefit,
+        dinnerPreference: newLead.dinnerPreference || '',
+        otherDinner: newLead.otherDinner || '',
+        budget: newLead.budget || '',
+        trySushi: newLead.trySushi || '',
+        ingredients: (newLead.ingredients || []).join(' | '),
+      });
+
       fetch(webhookUrl, {
         method: 'POST',
         mode: 'no-cors',
-        // Avoid a CORS preflight. Apps Script reads the JSON from postData.contents.
-        body: JSON.stringify(newLead),
+        // Apps Script receives these values through e.parameter without a CORS preflight.
+        body: payload,
       }).catch((e) => console.warn('Webhook no pudo enviarse:', e));
     }
 
     return newLead;
   } catch (err) {
     console.error('Error al guardar lead:', err);
-    return null;
+    throw err;
   }
 }
 
