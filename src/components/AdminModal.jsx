@@ -6,7 +6,10 @@ import {
   deleteLead,
   exportLeadsToCSV,
   getWebhookUrl,
-  saveWebhookUrl
+  saveWebhookUrl,
+  getAdminToken,
+  saveAdminToken,
+  getRemoteLeads
 } from '../utils/storage';
 import { WhatsAppIcon } from './Icons';
 import BakuLogo from './BakuLogo';
@@ -25,13 +28,27 @@ export default function AdminModal({ isOpen, onClose }) {
   const [showWebhookConfig, setShowWebhookConfig] = useState(false);
   const [webhookUrl, setWebhookUrlState] = useState('');
   const [webhookSaved, setWebhookSaved] = useState(false);
+  const [adminToken, setAdminTokenState] = useState('');
+  const [remoteError, setRemoteError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       setLeads(getStoredLeads());
       setWebhookUrlState(getWebhookUrl());
+      setAdminTokenState(getAdminToken());
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !adminToken) return;
+
+    getRemoteLeads(adminToken)
+      .then((remoteLeads) => {
+        setRemoteError('');
+        setLeads(remoteLeads);
+      })
+      .catch((error) => setRemoteError(error.message));
+  }, [isOpen, adminToken]);
 
   if (!isOpen) return null;
 
@@ -52,6 +69,15 @@ export default function AdminModal({ isOpen, onClose }) {
     saveWebhookUrl(webhookUrl);
     setWebhookSaved(true);
     setTimeout(() => setWebhookSaved(false), 2500);
+  };
+
+  const handleSaveAdminToken = (e) => {
+    e.preventDefault();
+    saveAdminToken(adminToken);
+    setRemoteError('');
+    getRemoteLeads(adminToken)
+      .then(setLeads)
+      .catch((error) => setRemoteError(error.message));
   };
 
   const filteredLeads = leads.filter((item) => {
@@ -135,6 +161,22 @@ export default function AdminModal({ isOpen, onClose }) {
                 {webhookSaved ? 'Guardado' : 'Guardar URL'}
               </button>
             </form>
+            <form onSubmit={handleSaveAdminToken} className="flex gap-2 mt-3">
+              <input
+                type="password"
+                value={adminToken}
+                onChange={(e) => setAdminTokenState(e.target.value)}
+                placeholder="Token administrativo de Apps Script"
+                className="flex-1 px-3 py-2 rounded-lg bg-white border border-baku-border text-baku-carbon text-xs focus:outline-none focus:border-baku-orange"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-baku-carbon hover:bg-black text-white font-bold text-xs transition-colors shrink-0"
+              >
+                Cargar respuestas
+              </button>
+            </form>
+            {remoteError && <p className="mt-2 text-xs font-semibold text-baku-red">{remoteError}</p>}
           </div>
         )}
 

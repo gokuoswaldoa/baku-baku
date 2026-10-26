@@ -1,6 +1,32 @@
 const SPREADSHEET_ID = '1twxvkyu9jIyLQrYy5H9UvJ79tXWfIoYfd__jXcppCUI';
+const ADMIN_READ_TOKEN = 'CAMBIA_ESTE_TOKEN_POR_UNO_SEGURO';
 
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'leads') {
+    if (e.parameter.token !== ADMIN_READ_TOKEN) {
+      return jsonResponse({ ok: false, error: 'unauthorized' });
+    }
+
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheets()[0];
+    const rows = sheet.getDataRange().getValues();
+    const leads = rows.slice(1).map((row) => ({
+      id: row[10] || `sheet_${row[0].getTime ? row[0].getTime() : Date.now()}`,
+      createdAt: row[0],
+      formattedDate: row[0],
+      whatsapp: row[1],
+      couponCode: row[2],
+      status: row[3] || 'pendiente',
+      benefit: row[4],
+      dinnerPreference: row[5],
+      otherDinner: row[6],
+      budget: row[7],
+      trySushi: row[8],
+      ingredients: String(row[9] || '').split(' | ').filter(Boolean),
+    }));
+
+    return jsonResponse({ ok: true, leads: leads.reverse() });
+  }
+
   return jsonResponse({ ok: true, service: 'baku-baku-survey' });
 }
 

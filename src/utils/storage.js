@@ -12,6 +12,7 @@ export function generateUniqueCoupon(phone = '') {
 
 const STORAGE_KEY = 'baku_baku_leads';
 const CONFIG_KEY = 'baku_baku_config';
+const ADMIN_TOKEN_KEY = 'baku_baku_admin_token';
 const DEPLOYMENT_WEBHOOK_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || '';
 
 function normalizePhone(phone = '') {
@@ -131,6 +132,39 @@ export function saveWebhookUrl(url) {
   } catch (err) {
     console.error('Error al guardar webhook:', err);
   }
+}
+
+export function getAdminToken() {
+  try {
+    return localStorage.getItem(ADMIN_TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function saveAdminToken(token) {
+  try {
+    localStorage.setItem(ADMIN_TOKEN_KEY, token.trim());
+  } catch (err) {
+    console.error('Error al guardar token administrativo:', err);
+  }
+}
+
+export async function getRemoteLeads(token) {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl || !token) return [];
+
+  const response = await fetch(`${webhookUrl}?action=leads&token=${encodeURIComponent(token)}`);
+  if (!response.ok) {
+    throw new Error(`No se pudo consultar Google Sheets (${response.status}).`);
+  }
+
+  const result = await response.json();
+  if (!result.ok) {
+    throw new Error(result.error || 'Google Sheets rechazó la consulta.');
+  }
+
+  return result.leads || [];
 }
 
 // Export database to CSV
