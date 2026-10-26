@@ -26,7 +26,6 @@ import {
   Clock,
   ArrowRight,
   Info,
-  Lock,
   Sparkles
 } from 'lucide-react';
 
@@ -91,7 +90,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [validationError, setValidationError] = useState('');
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const isAdminRoute = window.location.pathname.replace(/\/+$/, '') === '/admi';
 
   const handleDinnerSelect = (label) => {
     setFormData((prev) => ({
@@ -207,6 +206,14 @@ export default function App() {
     setIsSubmitted(false);
     setValidationError('');
   };
+
+  if (isAdminRoute) {
+    return (
+      <div className="min-h-screen bg-baku-ivory">
+        <AdminModal isOpen onClose={() => window.location.assign('/')} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-baku-ivory text-baku-carbon flex flex-col font-sans selection:bg-baku-orange selection:text-white">
@@ -637,23 +644,12 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer with Discreet Admin Access */}
+      {/* Footer */}
       <footer className="w-full py-4 text-center border-t border-baku-border text-xs text-baku-neutral bg-baku-white/50">
         <div className="max-w-md sm:max-w-xl mx-auto px-4 flex items-center justify-between">
           <span className="font-medium">BAKU-BAKU SUSHI & FIRE • Dark Kitchen Local</span>
-          <button
-            onClick={() => setIsAdminOpen(true)}
-            className="inline-flex items-center gap-1 text-[11px] text-baku-neutral hover:text-baku-orange transition-colors py-1 px-2 rounded hover:bg-baku-white border border-transparent hover:border-baku-border"
-            title="Abrir base de datos de fundadores"
-          >
-            <Lock className="w-3 h-3" />
-            <span>Admin</span>
-          </button>
         </div>
       </footer>
-
-      {/* Admin / Leads Control Modal */}
-      <AdminModal isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />
     </div>
   );
 }
