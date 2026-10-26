@@ -12,6 +12,7 @@ export function generateUniqueCoupon(phone = '') {
 
 const STORAGE_KEY = 'baku_baku_leads';
 const CONFIG_KEY = 'baku_baku_config';
+const DEPLOYMENT_WEBHOOK_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || '';
 
 // Retrieve all leads from browser database
 export function getStoredLeads() {
@@ -49,7 +50,7 @@ export async function saveLead(leadData) {
       fetch(webhookUrl, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        // Avoid a CORS preflight. Apps Script reads the JSON from postData.contents.
         body: JSON.stringify(newLead),
       }).catch((e) => console.warn('Webhook no pudo enviarse:', e));
     }
@@ -90,9 +91,9 @@ export function deleteLead(id) {
 // Webhook config
 export function getWebhookUrl() {
   try {
-    return localStorage.getItem(CONFIG_KEY) || '';
+    return DEPLOYMENT_WEBHOOK_URL || localStorage.getItem(CONFIG_KEY) || '';
   } catch {
-    return '';
+    return DEPLOYMENT_WEBHOOK_URL;
   }
 }
 
