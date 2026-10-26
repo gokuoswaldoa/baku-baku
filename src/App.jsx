@@ -235,7 +235,7 @@ export default function App() {
             </h1>
 
             <p className="text-baku-neutral text-sm leading-relaxed mb-6 max-w-md mx-auto">
-              Estamos preparando la apertura de <strong className="text-baku-carbon font-bold">BAKU-BAKU SUSHI & FIRE</strong> en la colonia:
+              Estamos preparando la apertura de <strong className="text-baku-carbon font-bold">BAKU-BAKU SUSHI & FIRE</strong> en la colonia Ruben Jaramillo, Temixco:
               bolas de sushi empanizadas, doradas y ultra crujientes.
             </p>
 
