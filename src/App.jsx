@@ -236,7 +236,7 @@ export default function App() {
 
             <p className="text-baku-neutral text-sm leading-relaxed mb-6 max-w-md mx-auto">
               Estamos preparando la apertura de <strong className="text-baku-carbon font-bold">BAKU-BAKU SUSHI & FIRE</strong> en la colonia:
-              bolas de sushi empanizadas, doradas y ultra crujientes con entrega directa a domicilio.
+              bolas de sushi empanizadas, doradas y ultra crujientes.
             </p>
 
             {/* Quick Benefits Cards */}
