@@ -1,9 +1,11 @@
+import { supabase, isSupabaseConfigured } from './supabase';
+
 // Helper to generate a unique founder coupon code
 export function generateUniqueCoupon(phone = '') {
   const cleanPhone = phone.replace(/[^0-9]/g, '');
   const phoneSuffix = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : '';
   const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
-  
+
   if (phoneSuffix) {
     return `BAKU-${phoneSuffix}`;
   }
@@ -13,13 +15,12 @@ export function generateUniqueCoupon(phone = '') {
 const STORAGE_KEY = 'baku_baku_leads';
 const CONFIG_KEY = 'baku_baku_config';
 const ADMIN_TOKEN_KEY = 'baku_baku_admin_token';
-const DEPLOYMENT_WEBHOOK_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || '';
 
 function normalizePhone(phone = '') {
   return phone.replace(/\D/g, '').slice(-10);
 }
 
-// Retrieve all leads from browser database
+// Retrieve leads from browser localStorage (cache / fallback)
 export function getStoredLeads() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -30,17 +31,12 @@ export function getStoredLeads() {
   }
 }
 
-// Save new lead
+// Save new lead (persists to Supabase, with local cache fallback)
 export async function saveLead(leadData) {
   try {
-    const existing = getStoredLeads();
     const phone = normalizePhone(leadData.whatsapp);
-    if (!phone) {
-      throw new Error('El WhatsApp es obligatorio para registrar la respuesta.');
-    }
-
-    if (existing.some((lead) => normalizePhone(lead.whatsapp) === phone)) {
-      throw new Error('Este número de WhatsApp ya tiene una respuesta registrada.');
+    if (!phone || phone.length !== 10) {
+      throw new Error('El WhatsApp es obligatorio y debe tener 10 dígitos.');
     }
 
     const newLead = {
@@ -56,33 +52,58 @@ export async function saveLead(leadData) {
       whatsapp: phone,
     };
 
-    const updated = [newLead, ...existing];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    // 1. If Supabase is configured, save directly to cloud database
+    if (isSupabaseConfigured && supabase) {
+      // Check for duplicate phone in Supabase
+      const { data: existing, error: checkError } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('whatsapp', phone)
+        .maybeSingle();
 
-    // Optional webhook trigger if Google Sheet or external API is configured
-    const webhookUrl = getWebhookUrl();
-    if (webhookUrl) {
-      const payload = new URLSearchParams({
-        id: newLead.id,
-        createdAt: newLead.createdAt,
-        whatsapp: newLead.whatsapp,
-        couponCode: newLead.couponCode || '',
-        status: newLead.status,
-        benefit: newLead.benefit,
-        dinnerPreference: newLead.dinnerPreference || '',
-        otherDinner: newLead.otherDinner || '',
-        budget: newLead.budget || '',
-        trySushi: newLead.trySushi || '',
-        ingredients: (newLead.ingredients || []).join(' | '),
-      });
+      if (checkError) {
+        console.warn('Advertencia al verificar duplicado en Supabase:', checkError);
+      } else if (existing) {
+        throw new Error('Este número de WhatsApp ya tiene una respuesta registrada.');
+      }
 
-      fetch(webhookUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        // Apps Script receives these values through e.parameter without a CORS preflight.
-        body: payload,
-      }).catch((e) => console.warn('Webhook no pudo enviarse:', e));
+      // Insert record to Supabase
+      const { error: insertError } = await supabase.from('leads').insert([
+        {
+          id: newLead.id,
+          created_at: newLead.createdAt,
+          formatted_date: newLead.formattedDate,
+          whatsapp: newLead.whatsapp,
+          coupon_code: newLead.couponCode || '',
+          status: newLead.status,
+          benefit: newLead.benefit,
+          dinner_preference: newLead.dinnerPreference || '',
+          other_dinner: newLead.otherDinner || '',
+          budget: newLead.budget || '',
+          try_sushi: newLead.trySushi || '',
+          ingredients: newLead.ingredients || [],
+        },
+      ]);
+
+      if (insertError) {
+        console.error('Error al guardar en Supabase:', insertError);
+        if (insertError.code === '23505') {
+          throw new Error('Este número de WhatsApp ya tiene una respuesta registrada.');
+        }
+        throw new Error('Error al conectar con la base de datos central. Intenta nuevamente.');
+      }
+    } else {
+      // Fallback check against localStorage
+      const localLeads = getStoredLeads();
+      if (localLeads.some((l) => normalizePhone(l.whatsapp) === phone)) {
+        throw new Error('Este número de WhatsApp ya tiene una respuesta registrada.');
+      }
     }
+
+    // 2. Always update local storage as reliable client cache
+    const currentLocal = getStoredLeads();
+    const updated = [newLead, ...currentLocal.filter((l) => l.id !== newLead.id)];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
     return newLead;
   } catch (err) {
@@ -91,12 +112,25 @@ export async function saveLead(leadData) {
   }
 }
 
-// Update lead status
-export function updateLeadStatus(id, newStatus) {
+// Update lead status (updates Supabase & local cache)
+export async function updateLeadStatus(id, newStatus) {
   try {
+    // Update local cache
     const leads = getStoredLeads();
     const updated = leads.map((item) => (item.id === id ? { ...item, status: newStatus } : item));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    // Update Supabase if configured
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('leads')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error al actualizar estado en Supabase:', error);
+      }
+    }
     return updated;
   } catch (err) {
     console.error('Error al actualizar estado:', err);
@@ -104,12 +138,23 @@ export function updateLeadStatus(id, newStatus) {
   }
 }
 
-// Delete lead
-export function deleteLead(id) {
+// Delete lead (deletes from Supabase & local cache)
+export async function deleteLead(id) {
   try {
     const leads = getStoredLeads();
     const updated = leads.filter((item) => item.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error al eliminar lead en Supabase:', error);
+      }
+    }
     return updated;
   } catch (err) {
     console.error('Error al eliminar lead:', err);
@@ -117,13 +162,55 @@ export function deleteLead(id) {
   }
 }
 
-// Webhook config
-export function getWebhookUrl() {
-  try {
-    return DEPLOYMENT_WEBHOOK_URL || localStorage.getItem(CONFIG_KEY) || '';
-  } catch {
-    return DEPLOYMENT_WEBHOOK_URL;
+// Get remote leads directly from Supabase
+export async function getRemoteLeads() {
+  if (!isSupabaseConfigured || !supabase) {
+    return getStoredLeads();
   }
+
+  try {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Error al consultar Supabase:', error);
+      throw new Error(`Error en Supabase: ${error.message}`);
+    }
+
+    const mapped = (data || []).map((row) => ({
+      id: row.id,
+      createdAt: row.created_at,
+      formattedDate:
+        row.formatted_date ||
+        new Intl.DateTimeFormat('es-MX', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(new Date(row.created_at)),
+      whatsapp: row.whatsapp,
+      couponCode: row.coupon_code,
+      status: row.status || 'pendiente',
+      benefit: row.benefit || '$40 MXN de descuento en compra > $180 MXN',
+      dinnerPreference: row.dinner_preference || '',
+      otherDinner: row.other_dinner || '',
+      budget: row.budget || '',
+      trySushi: row.try_sushi || '',
+      ingredients: row.ingredients || [],
+    }));
+
+    // Sync latest cloud data into local storage cache
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
+    return mapped;
+  } catch (err) {
+    console.warn('Fallo al obtener leads remotos, usando cache local:', err);
+    return getStoredLeads();
+  }
+}
+
+// Legacy webhook functions (kept for backwards compatibility)
+export function getWebhookUrl() {
+  return '';
 }
 
 export function saveWebhookUrl(url) {
@@ -148,23 +235,6 @@ export function saveAdminToken(token) {
   } catch (err) {
     console.error('Error al guardar token administrativo:', err);
   }
-}
-
-export async function getRemoteLeads(token) {
-  const webhookUrl = getWebhookUrl();
-  if (!webhookUrl || !token) return [];
-
-  const response = await fetch(`${webhookUrl}?action=leads&token=${encodeURIComponent(token)}`);
-  if (!response.ok) {
-    throw new Error(`No se pudo consultar Google Sheets (${response.status}).`);
-  }
-
-  const result = await response.json();
-  if (!result.ok) {
-    throw new Error(result.error || 'Google Sheets rechazó la consulta.');
-  }
-
-  return result.leads || [];
 }
 
 // Export database to CSV
