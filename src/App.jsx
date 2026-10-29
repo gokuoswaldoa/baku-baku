@@ -431,7 +431,7 @@ export default function App() {
                 <div className="mb-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-baku-orange">Pregunta 3 de 5</span>
                   <h2 className="text-xl sm:text-2xl font-extrabold text-baku-carbon mt-1">
-                    Si abriera una opción de Sushi Empanizado en Bola (Bolas de Fuego) a domicilio en la colonia, ¿te animarías a probarlo?
+                    Si abriera una opción de Sushi Empanizado en Bola (Bolas de Fuego) en la colonia Ruben Jaramillo Temixco, te animarías a probarlo?
                   </h2>
                   <p className="text-xs sm:text-sm text-baku-neutral mt-1">
                     Esferas crujientes rellenas de arroz sazonado, proteína gourmet y queso crema fundido.
