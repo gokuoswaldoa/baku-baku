@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { cartTotals, type CartItem } from '../cart';
 import { checkoutMessage, readCheckout } from '../checkout';
+import { checkoutSubmissionBody, checkoutSubmissionEnabled, registerCheckout } from '../checkout-submission';
 import { availability, deliveryReference, modalities, whatsapp } from '../order-config';
 import { DeliveryLocation } from './DeliveryLocation';
 
@@ -20,25 +21,71 @@ interface Props {
   validateItems: () => boolean;
 }
 
+interface Submission {
+  key: string;
+  body: string;
+  message: string;
+  subtotalCents: number;
+}
+
 export function OrderCheckout({ items, blocked, editing, validateItems }: Props) {
   const [modality, setModality] = useState<keyof typeof modalities>('recogida');
   const [preview, setPreview] = useState<{ items: CartItem[]; message: string }>();
   const [feedback, setFeedback] = useState('');
+  const [sending, setSending] = useState(false);
+  const [canRetry, setCanRetry] = useState(false);
+  const pending = useRef<Submission>();
+  const registered = useRef<{ body: string; message: string }>();
+  const inFlight = useRef(false);
   const previewTitle = useRef<HTMLHeadingElement>(null);
   const totals = cartTotals(items);
-  const message = preview?.items === items && !blocked && !editing ? preview.message : undefined;
+  const message = checkoutSubmissionEnabled || (preview?.items === items && !blocked && !editing)
+    ? preview?.message : undefined;
 
   useEffect(() => {
     if (message) previewTitle.current?.focus();
   }, [message]);
 
   function clearPreview() {
+    if (checkoutSubmissionEnabled && (pending.current || registered.current)) return;
     setPreview(undefined);
     setFeedback('');
   }
 
+  async function submit(attempt: Submission) {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSending(true);
+    setPreview(undefined);
+    setFeedback('Registrando la solicitud…');
+    try {
+      const result = await registerCheckout(attempt.key, attempt.body, attempt.subtotalCents);
+      setCanRetry(result.kind === 'retry');
+      if (result.kind === 'retry') {
+        setFeedback('No pudimos comprobar el registro. Reintenta la misma solicitud para evitar un duplicado.');
+        return;
+      }
+      pending.current = undefined;
+      if (result.kind === 'invalid') {
+        setFeedback('El negocio no pudo registrar esta combinación. Revisa tus datos y la disponibilidad antes de intentar de nuevo.');
+      } else if (result.kind === 'conflict') {
+        setFeedback('No pudimos comprobar el folio de esta solicitud. Consulta al negocio antes de volver a enviarla.');
+        pending.current = attempt;
+      } else {
+        const message = 'Folio de solicitud: ' + result.folio + '\n\n' + attempt.message;
+        registered.current = { body: attempt.body, message };
+        setPreview({ items, message });
+        setFeedback('Solicitud registrada. Envía el folio por WhatsApp para confirmar con el negocio.');
+      }
+    } finally {
+      inFlight.current = false;
+      setSending(false);
+    }
+  }
+
   function prepare(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (inFlight.current || pending.current) return;
     clearPreview();
     if (!items.length || blocked || editing || !validateItems()) return;
     const details = readCheckout(new FormData(event.currentTarget), modality);
@@ -46,7 +93,19 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
       setFeedback('Revisa el contacto y, para entrega, la dirección y las coordenadas del pin.');
       return;
     }
-    setPreview({ items, message: checkoutMessage(items, details) });
+    const message = checkoutMessage(items, details);
+    if (!checkoutSubmissionEnabled) {
+      setPreview({ items, message });
+      return;
+    }
+    const body = checkoutSubmissionBody(items, details);
+    if (registered.current?.body === body) {
+      setPreview({ items, message: registered.current.message });
+      return;
+    }
+    const attempt = { key: crypto.randomUUID(), body, message, subtotalCents: totals.subtotal * 100 };
+    pending.current = attempt;
+    void submit(attempt);
   }
 
   async function copyMessage() {
@@ -120,9 +179,14 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
         ) : <p className="order-note">{availability.pickup}</p>}
       </div>
       <div>
-        <button className="action" type="submit" disabled={!items.length || blocked || editing}>
-          <MessageCircle aria-hidden="true" /> Revisar pedido para WhatsApp
+        <button className="action" type="submit" disabled={!items.length || blocked || editing || Boolean(pending.current)}>
+          <MessageCircle aria-hidden="true" /> {checkoutSubmissionEnabled ? 'Registrar solicitud' : 'Revisar pedido para WhatsApp'}
         </button>
+        {canRetry && (
+          <button className="cart-text-button" type="button" disabled={sending} onClick={() => {
+            if (pending.current) void submit(pending.current);
+          }}>Reintentar registro</button>
+        )}
         <p className="order-note">{editing ? 'Guarda o cancela la edición antes de enviar.' : availability.orderNote}</p>
         <p className="order-note" role="status">{feedback}</p>
         {message && (

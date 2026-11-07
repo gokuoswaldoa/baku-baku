@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
@@ -22,6 +23,8 @@ const edge = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe
 ], { windowsHide: true, stdio: 'ignore' });
 let ws;
 let tileFailure = false;
+let vite;
+let intake;
 try {
   let port;
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -222,8 +225,95 @@ try {
   await reload();
   await check("document.querySelectorAll('.cart-item').length === 0 && Boolean(document.querySelector('.cart-warning'))");
   console.log('PASS: different personalizations, three identical units, double click, editing, quantities, deletion, persistence, subtotal, pickup, contact validation, pin click/drag, explicit geolocation, map failure, private WhatsApp copy, delivery, obsolete and malformed storage.');
+
+  const requests = [];
+  const folio = '12345678-0000-4000-8000-000000000001';
+  const localJwt = 'test-gateway-jwt';
+  const localToken = 'test-intake-token';
+  intake = createServer(async (req, res) => {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    requests.push({ url: req.url, headers: req.headers, body: Buffer.concat(chunks).toString() });
+    // Simulate a lost success response, then replay and a catalog rejection.
+    const status = [503, 200, 422, 200][requests.length - 1] ?? 500;
+    const payload = status === 200 ? { id: folio, subtotal_cents: 38000 } : { error: 'test_error' };
+    res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(payload));
+  });
+  await new Promise(done => intake.listen(0, '127.0.0.1', done));
+  process.env.VITE_ORDER_INTAKE_LOCAL = 'true';
+  process.env.ORDER_LOCAL_SUPABASE_URL = 'http://127.0.0.1:' + intake.address().port;
+  process.env.ORDER_LOCAL_GATEWAY_JWT = localJwt;
+  process.env.ORDER_LOCAL_INTAKE_TOKEN = localToken;
+  const { createServer: createVite } = await import('vite');
+  vite = await createVite();
+  await vite.listen();
+  const localOrigin = 'http://127.0.0.1:5173';
+  const route = localOrigin + '/api/checkout/submit-order';
+  assert.equal((await fetch(route, { method: 'POST', headers: { origin: 'https://untrusted.test' } })).status, 403);
+  assert.equal((await fetch(route)).status, 403);
+  assert.equal(requests.length, 0);
+  const clientModule = await (await fetch(localOrigin + '/src/checkout-submission.ts')).text();
+  assert.equal(clientModule.includes(localToken) || clientModule.includes(localJwt), false);
+  await call('Emulation.setDeviceMetricsOverride', { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
+  await call('Page.navigate', { url: localOrigin });
+  await ready("Boolean(document.querySelector('.order-panel'))");
+  await evaluate('localStorage.setItem("baku-cart-v1", ' + JSON.stringify(saved) + ')');
+  await reload();
+  await check("document.querySelector('.cart-checkout button[type=submit]').textContent.includes('Registrar solicitud')");
+  await click(review);
+  assert.equal(requests.length, 0);
+  await evaluate("const mode = document.querySelector('.cart-checkout select'); mode.value = 'entrega'; mode.dispatchEvent(new Event('change', {bubbles:true}));");
+  await ready("Boolean(document.querySelector('input[name=street]'))");
+  for (const [name, value] of Object.entries({
+    customerName: 'Contacto ficticio', customerPhone: '0000000001', recipientName: 'Destinatario ficticio',
+    recipientPhone: '0000000002', street: 'Calle ficticia', exterior: 'S/N', colonia: 'Colonia ficticia',
+    municipality: 'Temixco', references: 'Puerta ficticia',
+  })) await enter(name, value);
+  await click('.checkout-map-actions button:nth-child(2)');
+  await enter('latitude', '18.85');
+  await enter('longitude', '-99.23');
+  await evaluate(`document.querySelector('${review}').click(); document.querySelector('${review}').click()`);
+  await ready("document.querySelector('.cart-checkout > div:last-child > [role=status]').textContent.includes('Reintenta')");
+  assert.equal(requests.length, 1);
+  await check("!document.querySelector('.checkout-preview')");
+  await enter('street', 'Calle editada');
+  await click('.cart-checkout > div:last-child > .cart-text-button');
+  await ready("Boolean(document.querySelector('.checkout-preview textarea'))");
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].body, requests[1].body);
+  assert.equal(requests[0].headers['idempotency-key'], requests[1].headers['idempotency-key']);
+  assert.equal(requests[0].url, '/functions/v1/submit-order');
+  assert.equal(requests[0].headers['x-intake-token'], localToken);
+  assert.equal(requests[0].headers.authorization, 'Bearer ' + localJwt);
+  const deliveryPayload = JSON.parse(requests[0].body);
+  assert.equal(deliveryPayload.items.length, 2);
+  assert.equal(deliveryPayload.contact.recipient_phone, '0000000002');
+  assert.equal(deliveryPayload.contact.latitude, 18.85);
+  assert.equal(deliveryPayload.contact.longitude, -99.23);
+  assert.equal(deliveryPayload.contact.address, 'Calle ficticia S/N, Col. Colonia ficticia, Temixco');
+  await check(`(() => {
+    const message = document.querySelector('.checkout-preview textarea').value;
+    return message.includes('${folio}') && message.includes('Calle ficticia') && !message.includes('Calle editada')
+      && message.includes('$380 MXN') && message.includes('pendientes de confirmación')
+      && new URL(document.querySelector('.checkout-preview a.action').href).search === ''
+      && !JSON.stringify(localStorage).includes('ficticio') && !JSON.stringify(sessionStorage).includes('0000000001')
+      && document.documentElement.scrollWidth === document.documentElement.clientWidth;
+  })()`);
+  await evaluate("(() => { const mode = document.querySelector('.cart-checkout select'); mode.value = 'recogida'; mode.dispatchEvent(new Event('change', {bubbles:true})); })()");
+  await click(review);
+  await ready("document.querySelector('.cart-checkout > div:last-child > [role=status]').textContent.includes('disponibilidad')");
+  await check("!document.querySelector('.checkout-preview')");
+  assert.deepEqual(JSON.parse(requests[2].body).contact, { name: 'Contacto ficticio', phone: '0000000001' });
+  await click(review);
+  await ready("Boolean(document.querySelector('.checkout-preview textarea'))");
+  await click(review);
+  assert.equal(requests.length, 4);
+  await check("!document.querySelector('.checkout-preview textarea').value.includes('Dirección:')");
+  console.log('PASS: 390 px controlled Vite gateway, origin gate, contact-only pickup, delivery payload, duplicate clicks, stable retries, catalog rejection, folio, and no PII persistence.');
 } finally {
   ws?.close();
   edge.kill();
   server.close();
+  await vite?.close();
+  intake?.close();
 }

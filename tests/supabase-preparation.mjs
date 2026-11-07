@@ -31,8 +31,21 @@ const asModuleUrl = source => 'data:text/javascript;base64,' + Buffer.from(ts.tr
 const payloadUrl = asModuleUrl(await readFile(payloadPath, 'utf8'));
 const { validatePayload, validateIdempotencyKey } = await import(payloadUrl);
 const line = { product_id: 'bola-fuego-xl', quantity: 3, finish_id: 'anguila', topping_ids: ['cebollin', 'ajonjoli'], dip_id: 'sin-dip', expected_unit_price_cents: 9500 };
-const order = { modality: 'entrega', neighborhood: ' Colonia de prueba ', items: [line, { ...line, quantity: 1, dip_id: 'valentina' }] };
+const pickupContact = { name: 'Contacto de prueba', phone: '0000000001' };
+const contact = { ...pickupContact, address: 'Dirección ficticia S/N', latitude: 18.8, longitude: -99.2,
+  recipient_name: 'Destinatario de prueba', recipient_phone: '0000000002' };
+const order = { modality: 'entrega', neighborhood: ' Colonia de prueba ', contact,
+  items: [line, { ...line, quantity: 1, dip_id: 'valentina' }] };
 assert.equal(validatePayload(order).neighborhood, 'Colonia de prueba');
+assert.deepEqual(validatePayload(order).contact, contact);
+assert.deepEqual(validatePayload({ modality: 'recogida', contact: pickupContact, items: [line] }).contact, pickupContact);
+assert.throws(() => validatePayload({ modality: 'recogida', contact, items: [line] }));
+assert.throws(() => validatePayload({ ...order, contact: undefined }));
+for (const field of ['recipient_name', 'recipient_phone', 'address', 'latitude', 'longitude']) {
+  assert.throws(() => validatePayload({ ...order, contact: { ...contact, [field]: undefined } }));
+}
+assert.throws(() => validatePayload({ ...order, contact: { ...contact, name: 'a\nb' } }));
+assert.throws(() => validatePayload({ ...order, contact: { ...contact, phone: '+520000000001' } }));
 assert.deepEqual(validatePayload(order).items[0].topping_ids, ['ajonjoli', 'cebollin']);
 for (const quantity of [0, -1, 1.5, 100, '3', null]) {
   assert.throws(() => validatePayload({ ...order, items: [{ ...line, quantity }] }));
@@ -63,6 +76,7 @@ env.set('ORDER_INTAKE_ENABLED', 'true');
 assert.equal((await handler(request())).status, 403);
 env.set('ORDER_INTAKE_TOKEN', 'offline-test-token');
 assert.equal((await handler(request({ headers: { origin: 'https://untrusted.test' } }))).status, 403);
+assert.equal((await handler(request({ headers: { 'x-intake-token': 'offline-test-token', 'content-type': 'application/jsonp' } }))).status, 415);
 assert.equal((await handler(request({ body: 'invalid-json' }))).status, 400);
 assert.equal((await handler(request({ body: ' '.repeat(65537) }))).status, 400);
 assert.equal((await handler(request())).status, 503);
@@ -70,20 +84,30 @@ env.set('SUPABASE_URL', 'http://offline.test');
 env.set('SUPABASE_SERVICE_ROLE_KEY', 'offline-fixture-only');
 const originalFetch = globalThis.fetch;
 let calls = 0;
+const id = '00000000-0000-4000-8000-000000000001';
 try {
   globalThis.fetch = async (url, options) => {
     calls++;
-    assert.equal(url, 'http://offline.test/rest/v1/rpc/submit_order_request');
-    assert.equal(JSON.parse(options.body).p_payload.items.length, 2);
-    return Response.json({ id: 'offline', status: 'pendiente', subtotal_cents: 38000, replayed: false });
+    assert.equal(url, 'http://offline.test/rest/v1/rpc/submit_checkout_request');
+    assert.equal(options.redirect, 'error');
+    const forwarded = JSON.parse(options.body);
+    assert.equal(forwarded.p_payload.items.length, 2);
+    assert.deepEqual(forwarded.p_payload.contact, contact);
+    assert.equal(forwarded.p_idempotency_key, '00000000-0000-4000-8000-000000000002');
+    return Response.json({ id, status: 'pendiente', subtotal_cents: 38000, replayed: calls > 1, contact });
   };
   const response = await handler(request());
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('cache-control'), 'no-store');
-  assert.equal((await response.json()).subtotal_cents, 38000);
-  assert.equal(calls, 1);
+  assert.deepEqual(await response.json(), { id, subtotal_cents: 38000 });
+  assert.deepEqual(await (await handler(request())).json(), { id, subtotal_cents: 38000 });
+  assert.equal(calls, 2);
+  globalThis.fetch = async () => Response.json({ id, subtotal_cents: '38000', replayed: false });
+  assert.equal((await handler(request())).status, 503);
   globalThis.fetch = async () => Response.json({ code: '23505', message: 'do not expose private error' }, { status: 409 });
-  assert.equal((await handler(request())).status, 409);
+  const conflict = await handler(request());
+  assert.equal(conflict.status, 409);
+  assert.deepEqual(await conflict.json(), { error: 'idempotency_conflict' });
   globalThis.fetch = async () => Response.json({ code: '22023' }, { status: 400 });
   assert.equal((await handler(request())).status, 422);
   globalThis.fetch = async () => { throw Error('offline timeout'); };
@@ -95,6 +119,7 @@ try {
 
 const migrationNames = (await readdir('supabase/migrations')).filter(name => name.endsWith('.sql')).sort();
 assert.ok(migrationNames.includes('202611060006_delivery_recipient.sql'));
+assert.ok(migrationNames.includes('202611060007_checkout_submission.sql'));
 assert.equal(new Set(migrationNames.map(name => name.split('_')[0])).size, migrationNames.length);
 for (const name of migrationNames) {
   const sql = await readFile('supabase/migrations/' + name, 'utf8');
@@ -103,4 +128,3 @@ for (const name of migrationNames) {
   assert.equal((sql.match(/\$\$/g) || []).length % 2, 0, 'Unbalanced function delimiters');
 }
 console.log('PASS: strict Edge TypeScript, payload validation, guarded handler, size limits, normalized payload, RPC errors and migration file structure.');
-console.log('PENDING: SQL execution, actual RLS/Auth, database concurrency, Deno and Edge runtime integration.');

@@ -9,13 +9,15 @@ export interface OrderPayload {
     dip_id: string;
     expected_unit_price_cents: number;
   }[];
-  contact?: {
-    name?: string;
-    phone?: string;
+  contact: {
+    name: string;
+    phone: string;
     address?: string;
     references?: string;
     latitude?: number;
     longitude?: number;
+    recipient_name?: string;
+    recipient_phone?: string;
   };
 }
 
@@ -29,8 +31,15 @@ function keys(value: Record<string, unknown>, allowed: string[]) {
 }
 
 function text(value: unknown, max: number): string {
-  if (typeof value !== 'string' || !value.trim() || value.trim().length > max) throw new Error('invalid_text');
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > max
+    || /[\u0000-\u001f\u007f]/.test(value)) throw new Error('invalid_text');
   return value.trim();
+}
+
+function phone(value: unknown): string {
+  const result = text(value, 10);
+  if (!/^[0-9]{10}$/.test(result)) throw new Error('invalid_phone');
+  return result;
 }
 
 function identifier(value: unknown): string {
@@ -51,8 +60,10 @@ export function validatePayload(value: unknown): OrderPayload {
   keys(input, ['modality', 'neighborhood', 'items', 'contact']);
   if (input.modality !== 'recogida' && input.modality !== 'entrega') throw new Error('invalid_modality');
   if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 50) throw new Error('invalid_items');
+  const contact = object(input.contact);
   const result: OrderPayload = {
     modality: input.modality,
+    contact: { name: text(contact.name, 120), phone: phone(contact.phone) },
     items: input.items.map(raw => {
       const line = object(raw);
       keys(line, ['product_id', 'quantity', 'finish_id', 'topping_ids', 'dip_id', 'expected_unit_price_cents']);
@@ -69,22 +80,21 @@ export function validatePayload(value: unknown): OrderPayload {
       };
     }),
   };
-  if (result.modality === 'entrega') result.neighborhood = text(input.neighborhood, 120);
-  else if (input.neighborhood !== undefined) throw new Error('unexpected_neighborhood');
-  if (input.contact !== undefined) {
-    const contact = object(input.contact);
-    keys(contact, ['name', 'phone', 'address', 'references', 'latitude', 'longitude']);
-    result.contact = {};
-    for (const field of ['name', 'phone', 'address', 'references'] as const) {
-      if (contact[field] !== undefined) result.contact[field] = text(contact[field], field === 'name' ? 120 : field === 'phone' ? 25 : 500);
-    }
-    if (result.contact.phone && !/^\+?[0-9 ()-]{7,25}$/.test(result.contact.phone)) throw new Error('invalid_phone');
-    if (contact.latitude !== undefined || contact.longitude !== undefined) {
-      if (typeof contact.latitude !== 'number' || !Number.isFinite(contact.latitude) || Math.abs(contact.latitude) > 90
-        || typeof contact.longitude !== 'number' || !Number.isFinite(contact.longitude) || Math.abs(contact.longitude) > 180) throw new Error('invalid_pin');
-      result.contact.latitude = contact.latitude;
-      result.contact.longitude = contact.longitude;
-    }
+  if (result.modality === 'recogida') {
+    keys(contact, ['name', 'phone']);
+    if (input.neighborhood !== undefined) throw new Error('unexpected_neighborhood');
+    return result;
   }
+
+  keys(contact, ['name', 'phone', 'address', 'references', 'latitude', 'longitude', 'recipient_name', 'recipient_phone']);
+  if (typeof contact.latitude !== 'number' || !Number.isFinite(contact.latitude) || Math.abs(contact.latitude) > 90
+    || typeof contact.longitude !== 'number' || !Number.isFinite(contact.longitude) || Math.abs(contact.longitude) > 180) throw new Error('invalid_pin');
+  result.neighborhood = text(input.neighborhood, 120);
+  result.contact.address = text(contact.address, 500);
+  if (contact.references !== undefined) result.contact.references = text(contact.references, 500);
+  result.contact.recipient_name = text(contact.recipient_name, 120);
+  result.contact.recipient_phone = phone(contact.recipient_phone);
+  result.contact.latitude = contact.latitude;
+  result.contact.longitude = contact.longitude;
   return result;
 }
