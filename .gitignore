@@ -1,0 +1,37 @@
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+.vite/
+coverage/
+*.tsbuildinfo
+*.log
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+*.local
+.npmrc
+.netrc
+*.pem
+*.key
+*.pfx
+*.p12
+credentials.json
+service-account*.json
+secrets/
+.aws/
+
+# Local tools, backups and browser profiles
+/.backup-*/
+/.validacion-baku/
+/.claude/
+/.agents/
+/agent/
+/.codex/
+/.vscode/
+/.idea/
+.DS_Store
+Thumbs.db
+
