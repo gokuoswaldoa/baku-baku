@@ -1,7 +1,7 @@
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ConceptSection } from './components/ConceptSection';
-import { Configurator } from './components/Configurator';
+import { CartOrder } from './components/CartOrder';
 import { HowToOrderSection } from './components/HowToOrderSection';
 
 export function App() {
@@ -13,7 +13,7 @@ export function App() {
         <Hero />
         <div className="paper">
           <ConceptSection />
-          <Configurator />
+          <CartOrder />
         </div>
       </main>
       <HowToOrderSection />

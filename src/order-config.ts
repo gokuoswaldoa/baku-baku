@@ -31,6 +31,38 @@ export const modalities = {
   entrega: 'Entrega a domicilio — tarifa por cotizar',
 };
 
+export interface OrderLine {
+  finish: string;
+  toppings: readonly string[];
+  dip: string;
+  quantity: number;
+}
+
+export function cartConsultationUrl(lines: readonly OrderLine[], modality: keyof typeof modalities, neighborhood: string) {
+  const quantity = lines.reduce((total, line) => total + line.quantity, 0);
+  const message = [
+    'Hola ' + business.shortName + ', quiero consultar la disponibilidad de este pedido:',
+    ...lines.map((line, index) => [
+      '',
+      (index + 1) + '. ' + line.quantity + ' × ' + product.name + ' — ' + product.filling,
+      'Acabado: ' + line.finish,
+      'Toppings: ' + (line.toppings.join(', ') || 'Ninguno'),
+      'Salsa aparte: ' + line.dip,
+      'Importe provisional: $' + line.quantity * product.provisionalPrice + ' MXN',
+    ].join('\n')),
+    '',
+    'Total de bolas: ' + quantity,
+    'Precio provisional por unidad: $' + product.provisionalPrice + ' MXN',
+    'Subtotal provisional de productos: $' + quantity * product.provisionalPrice + ' MXN',
+    'Modalidad: ' + modalities[modality],
+    ...(modality === 'recogida'
+      ? [availability.pickup]
+      : ['Colonia: ' + neighborhood.trim(), deliveryReference, 'Envío separado del subtotal. ' + availability.delivery]),
+    availability.orderNote,
+  ].join('\n');
+  return whatsapp + '?text=' + encodeURIComponent(message);
+}
+
 export function consultationUrl(
   finish: string,
   selectedToppings: readonly string[],
