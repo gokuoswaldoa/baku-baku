@@ -14,7 +14,7 @@ El subtotal se calcula en servidor. Las restricciones diferidas verifican línea
 
 ## Administración y estados
 
-El registro público de cuentas y los accesos anónimos de Auth están deshabilitados en la configuración local. En un proyecto futuro habrá que reflejar estos ajustes en el Dashboard. El propietario del proyecto crea al administrador de confianza mediante Auth y agrega su UUID a admin_users desde el entorno administrativo seguro. No existe un endpoint para autopromoverse. El administrador debe completar MFA TOTP para obtener una sesión aal2 antes de consultar datos privados.
+El registro público de cuentas y los accesos anónimos de Auth están deshabilitados en la configuración local. En el proyecto Free creado hay que reflejar estos ajustes en el Dashboard antes de habilitar acceso administrativo. El propietario del proyecto crea al administrador de confianza mediante Auth y agrega su UUID a admin_users desde el entorno administrativo seguro. No existe un endpoint para autopromoverse. El administrador debe completar MFA TOTP para obtener una sesión aal2 antes de consultar datos privados.
 
 Los administradores activos pueden editar disponibilidad y precios del catálogo. Las solicitudes y datos de clientes se leen con RLS y MFA. Los cambios de estado se realizan exclusivamente mediante transition_order, indicando el estado esperado para detectar acciones concurrentes.
 
@@ -51,3 +51,44 @@ No ejecutar comandos de vinculación, despliegue ni migraciones remotas en esta 
 - [Seguridad de Edge Functions](https://supabase.com/docs/guides/functions/auth)
 - [Autenticación multifactor](https://supabase.com/docs/guides/auth/auth-mfa)
 - [Configuración de Supabase CLI](https://supabase.com/docs/guides/local-development/cli/config)
+
+## Revisión previa a vincular el proyecto
+
+Orden revisado de las migraciones:
+1. 202611060001_schema crea tablas, claves, restricciones, helper administrativo y RLS.
+2. 202611060002_catalog inserta el producto y opciones sobre esas tablas.
+3. 202611060003_order_commands crea las RPC de registro, transición y tarifa; depende del esquema y de Auth.
+4. 202611060004_integrity agrega triggers que dependen de las tablas y funciones anteriores y restringe el rol de servidor a las RPC.
+
+La revisión estática no encontró DROP, TRUNCATE ni DELETE de datos. Los triggers BEFORE DELETE impiden alterar snapshots y eventos. La única relación ON DELETE CASCADE elimina la autorización admin_users cuando se elimina su usuario de Auth. Los REVOKE son cambios deliberados de permisos, incluido el rol service_role en la cuarta migración. Cada archivo es transaccional y está destinado a una aplicación única mediante el historial de migraciones. Un esquema remoto con tablas homónimas requiere revisión antes de aplicar.
+
+Las nueve tablas habilitan RLS. El público solo lee catálogo y opciones disponibles; los pedidos, contactos, entregas y eventos requieren administrador activo con aal2. Las funciones SECURITY DEFINER fijan search_path vacío y limitan EXECUTE. submit_order_request solo admite service_role; las funciones de administración vuelven a comprobar identidad y MFA. La validación real de políticas, concurrencia y sintaxis SQL sigue pendiente de PostgreSQL/Supabase.
+
+La configuración TOML mantiene submit-order con verify_jwt y su indicador de entorno desactivado. Vincular el proyecto no aplica estas migraciones ni los ajustes locales de Auth al proyecto remoto.
+
+## Cliente React/Vite preparado
+
+El SDK oficial @supabase/supabase-js es la única dependencia añadida. src/lib/supabase.ts expone getSupabaseClient con creación diferida y validación de URL y clave publishable. Importarlo no crea el cliente. Las sesiones persistentes, la detección de tokens en la URL y la renovación automática están desactivadas en esta preparación. Un módulo administrativo futuro deberá definir explícitamente el ciclo de sesión.
+
+Copiar .env.example a .env.local solo si este último aún no existe. Completar localmente VITE_SUPABASE_URL con la Project URL y VITE_SUPABASE_PUBLISHABLE_KEY con la clave publishable del proyecto, obtenidas en el Dashboard. Reiniciar Vite después de modificar variables. La URL y la referencia del proyecto todavía deben obtenerse del Dashboard. La clave recibida en el chat no se ha copiado al código, ejemplos ni commits.
+
+Las variables VITE_* son públicas dentro del bundle. Las claves secret y service_role, la contraseña de base de datos y el token de acceso de CLI pertenecen al entorno privado. .env.local, otros .env con valores y supabase/.temp están ignorados por Git. .env.example contiene solo nombres y campos vacíos.
+
+## Vinculación mediante CLI — procedimiento para ejecutar manualmente
+
+Desde PowerShell en la raíz del repositorio, con Node/npm disponibles, ejecutar:
+
+~~~powershell
+Set-Location -LiteralPath 'C:\Users\oswal\OneDrive\Escritorio\baku-baku'
+npx --yes supabase@2 login
+$projectRef = Read-Host 'Project ref del proyecto Free'
+npx --yes supabase@2 link --project-ref $projectRef
+~~~
+
+npx descarga temporalmente la CLI si no está disponible; estos comandos no se ejecutaron en esta fase. Usar el inicio de sesión interactivo de la CLI. Si solicita contraseña de base de datos, introducirla únicamente en su prompt local o dejarla vacía para omitir la validación de base de datos cuando lo ofrezca. No incluir credenciales en argumentos, capturas ni mensajes. La referencia se obtiene en Project Settings del proyecto correcto. Verificar que corresponda al proyecto Free.
+
+Este procedimiento solo vincula el directorio. La siguiente fase requiere revisar el esquema remoto y autorizar las migraciones y las pruebas RLS por separado. Conservar submit-order deshabilitada hasta completar las pruebas y aprobar su habilitación.
+
+Verificaciones locales adicionales mediante node tests/supabase-client.mjs y npm run build. La prueba de cliente usa datos ficticios, intercepta fetch y verifica cero solicitudes de red, creación única y exclusión de archivos privados.
+
+[Referencia de vinculación CLI](https://supabase.com/docs/reference/cli/supabase-link). [Claves de API y exposición pública](https://supabase.com/docs/guides/getting-started/api-keys).
