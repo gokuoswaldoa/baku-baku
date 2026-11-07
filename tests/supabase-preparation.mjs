@@ -94,7 +94,8 @@ try {
 }
 
 const migrationNames = (await readdir('supabase/migrations')).filter(name => name.endsWith('.sql')).sort();
-assert.equal(migrationNames.length, 4);
+assert.ok(migrationNames.includes('202611060006_delivery_recipient.sql'));
+assert.equal(new Set(migrationNames.map(name => name.split('_')[0])).size, migrationNames.length);
 for (const name of migrationNames) {
   const sql = await readFile('supabase/migrations/' + name, 'utf8');
   assert.match(sql, /^begin;/);

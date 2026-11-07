@@ -170,3 +170,14 @@ a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid 
   .cart-item { grid-template-columns: 1fr; }
   .cart-checkout { grid-template-columns: 1fr; }
 }
+
+.checkout-details, .cart-checkout > div, .checkout-field-grid > label { min-width: 0; }
+.checkout-details fieldset { margin-top: 1rem; min-width: 0; }
+.checkout-details legend, .checkout-preview h3 { font-weight: 800; margin-bottom: .4rem; }
+.checkout-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.checkout-map-actions { display: flex; flex-wrap: wrap; }
+.delivery-map { height: 240px; margin: .5rem 0; isolation: isolate; background: #39342e; }
+.delivery-pin-marker { background: #a83c08; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px #000; }
+.checkout-preview { margin-top: .75rem; }
+.checkout-preview textarea { width: 100%; padding: .5rem; border: 1px solid #9a826a; border-radius: .4rem; background: #24201b; resize: vertical; }
+.cart-checkout input, .cart-checkout select, .checkout-preview textarea { font-size: 1rem; }

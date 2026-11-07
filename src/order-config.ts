@@ -38,7 +38,7 @@ export interface OrderLine {
   quantity: number;
 }
 
-export function cartConsultationUrl(lines: readonly OrderLine[], modality: keyof typeof modalities, neighborhood: string) {
+export function cartConsultationMessage(lines: readonly OrderLine[], modality: keyof typeof modalities, neighborhood: string) {
   const quantity = lines.reduce((total, line) => total + line.quantity, 0);
   const message = [
     'Hola ' + business.shortName + ', quiero consultar la disponibilidad de este pedido:',
@@ -60,7 +60,7 @@ export function cartConsultationUrl(lines: readonly OrderLine[], modality: keyof
       : ['Colonia: ' + neighborhood.trim(), deliveryReference, 'Envío separado del subtotal. ' + availability.delivery]),
     availability.orderNote,
   ].join('\n');
-  return whatsapp + '?text=' + encodeURIComponent(message);
+  return message;
 }
 
 export function consultationUrl(

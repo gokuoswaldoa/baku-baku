@@ -21,6 +21,7 @@ const edge = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe
   'about:blank',
 ], { windowsHide: true, stdio: 'ignore' });
 let ws;
+let tileFailure = false;
 try {
   let port;
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -35,6 +36,14 @@ try {
   const pending = new Map();
   ws.onmessage = ({ data }) => {
     const msg = JSON.parse(data);
+    if (msg.method === 'Fetch.requestPaused') {
+      const requestId = msg.params.requestId;
+      const tile = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVnUAAAAASUVORK5CYII=';
+      void (tileFailure
+        ? call('Fetch.failRequest', { requestId, errorReason: 'InternetDisconnected' })
+        : call('Fetch.fulfillRequest', { requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'image/png' }, { name: 'Cache-Control', value: 'no-store' }], body: tile }));
+      return;
+    }
     if (msg.id && pending.has(msg.id)) {
       const { done, fail } = pending.get(msg.id);
       pending.delete(msg.id);
@@ -51,6 +60,9 @@ try {
     return result.result.value;
   };
   await call('Page.enable');
+  await call('Network.enable');
+  await call('Network.setCacheDisabled', {cacheDisabled: true});
+  await call('Fetch.enable', {patterns: [{urlPattern: 'https://tile.openstreetmap.org/*'}]});
   await call('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port });
   for (let attempt = 0; attempt < 40; attempt++) {
     if (await evaluate("Boolean(document.querySelector('.order')) && [...document.images].every(img => img.complete)")) break;
@@ -101,19 +113,91 @@ try {
   const saved = await evaluate("window.savedCart");
   await reload();
   await check("document.querySelectorAll('.cart-item').length === 2 && document.querySelector('.cart-controls select').value === '3' && document.querySelector('.cart-subtotal').textContent.includes('$380')");
-  await evaluate("window.open = url => { window.sentMessage = new URL(url).searchParams.get('text'); }");
-  await click('.cart-checkout button[type=submit]');
-  await check("window.sentMessage.includes('3 × Bola de Fuego XL') && window.sentMessage.includes('1 × Bola de Fuego XL') && window.sentMessage.includes('Sin salsa encima') && window.sentMessage.includes('Con salsa de anguila') && window.sentMessage.includes('Mayo chipotle') && window.sentMessage.includes('$380 MXN') && window.sentMessage.includes('Total de bolas: 4') && window.sentMessage.includes('Rubén Jaramillo, Temixco')");
-  await evaluate("const mode = document.querySelector('.cart-checkout select'); mode.value = 'entrega'; mode.dispatchEvent(new Event('change', {bubbles:true})); window.sentMessage = ''");
+
+  const enter = async (name, value) => {
+    await evaluate(`(() => {
+      const field = document.querySelector('input[name=' + ${JSON.stringify(name)} + ']');
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(field, ${JSON.stringify(value)});
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    await wait();
+  };
+  const ready = async expression => {
+    for (let attempt = 0; attempt < 35; attempt++) {
+      if (await evaluate(expression)) return;
+      await wait();
+    }
+    throw Error('Checkout condition did not become ready: ' + expression);
+  };
+  const review = '.cart-checkout button[type=submit]';
+  await click(review);
+  await check("!document.querySelector('.checkout-preview') && !document.querySelector('input[name=street]')");
+  await enter('customerName', 'Contacto ficticio');
+  await enter('customerPhone', '0000000001');
+  await click(review);
+  await check("document.querySelector('.checkout-preview textarea').value.includes('3 × Bola de Fuego XL') && document.querySelector('.checkout-preview textarea').value.includes('Mayo chipotle') && document.querySelector('.checkout-preview textarea').value.includes('$380 MXN') && document.querySelector('.checkout-preview textarea').value.includes('Rubén Jaramillo, Temixco') && !document.querySelector('.checkout-preview textarea').value.includes('Dirección:')");
+  await check("new URL(document.querySelector('.checkout-preview a.action').href).search === ''");
+  await evaluate("const mode = document.querySelector('.cart-checkout select'); mode.value = 'entrega'; mode.dispatchEvent(new Event('change', {bubbles:true}));");
   await wait();
-  await click('.cart-checkout button[type=submit]');
-  await check("window.sentMessage === ''");
-  await evaluate("const input = document.querySelector('input[name=colonia]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'Colonia de prueba'); input.dispatchEvent(new Event('input', {bubbles:true}))");
+  await click(review);
+  await check("!document.querySelector('.checkout-preview') && !document.querySelector('.delivery-map')");
+  for (const [name, value] of Object.entries({
+    recipientName: 'Destinatario ficticio', recipientPhone: '0000000002',
+    street: 'Calle ficticia', exterior: 'S/N', interior: 'B', colonia: 'Colonia ficticia',
+    municipality: 'Temixco', postalCode: '00000', references: 'Puerta ficticia',
+  })) await enter(name, value);
+  await click(review);
+  await check("!document.querySelector('.checkout-preview')");
+  await enter('latitude', '91');
+  await enter('longitude', '-99.23');
+  await click(review);
+  await check("!document.querySelector('.checkout-preview')");
+
+  await evaluate("window.geoRequests = 0; Object.defineProperty(navigator.geolocation, 'getCurrentPosition', {value: callback => { window.geoRequests++; callback({coords:{latitude:18.85,longitude:-99.23}}); }});");
+  await check('window.geoRequests === 0');
+  await click('.checkout-map-actions button:nth-child(2)');
+  await check("window.geoRequests === 1 && document.querySelector('input[name=latitude]').value === '18.850000'");
+  await click('.checkout-map-actions button:first-child');
+  await ready("Boolean(document.querySelector('.leaflet-tile-loaded') && document.querySelector('.delivery-pin-marker'))");
+  await check("document.querySelector('.leaflet-control-attribution a[href*=openstreetmap]') !== null");
+  await evaluate(`(() => {
+    const map = document.querySelector('.delivery-map');
+    const rect = map.getBoundingClientRect();
+    map.dispatchEvent(new MouseEvent('click', {bubbles:true,clientX:rect.left+rect.width/3,clientY:rect.top+rect.height/3}));
+  })()`);
+  await ready("document.querySelector('input[name=latitude]').value !== '18.850000'");
+  const previousPin = await evaluate("document.querySelector('input[name=latitude]').value");
+  const markerPoint = await evaluate(`(() => {
+    const marker = document.querySelector('.delivery-pin-marker');
+    marker.scrollIntoView({block:'center'});
+    const rect = marker.getBoundingClientRect();
+    return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+  })()`);
+  await call('Input.dispatchMouseEvent', { type: 'mousePressed', ...markerPoint, button: 'left', buttons: 1, clickCount: 1 });
+  await call('Input.dispatchMouseEvent', { type: 'mouseMoved', x: markerPoint.x + 20, y: markerPoint.y + 22, button: 'left', buttons: 1 });
   await wait();
-  await click('.cart-checkout button[type=submit]');
-  await check("window.sentMessage.includes('Colonia de prueba') && window.sentMessage.includes('$35 MXN cerca') && window.sentMessage.includes('$55 MXN lejos') && window.sentMessage.includes('$380 MXN') && window.sentMessage.includes('pendientes de confirmación')");
+  await call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: markerPoint.x + 20, y: markerPoint.y + 22, button: 'left', clickCount: 1 });
+  await ready("document.querySelector('input[name=latitude]').value !== " + JSON.stringify(previousPin));
+
+  await click('.checkout-map-actions button:first-child');
+  tileFailure = true;
+  await click('.checkout-map-actions button:first-child');
+  // Move to uncached tiles so the browser cannot reuse the earlier decoded images.
+  await enter('latitude', '18.90');
+  await ready("document.querySelector('.checkout-location').textContent.includes('El mapa no pudo cargar')");
+  await enter('latitude', '18,85');
+  await enter('longitude', '-99.23');
+  await click(review);
+  await check(`(() => {
+    const message = document.querySelector('.checkout-preview textarea').value;
+    return ['Contacto ficticio','0000000001','Destinatario ficticio','0000000002','Calle ficticia S/N, interior B','Colonia ficticia','C. P. 00000','Puerta ficticia','Pin: 18.85, -99.23','$35 MXN cerca','$55 MXN lejos','$380 MXN','pendientes de confirmación'].every(value => message.includes(value))
+      && !message.includes('google.com/maps') && !new URL(document.querySelector('.checkout-preview a.action').href).search;
+  })()`);
+  await evaluate("Object.defineProperty(navigator.clipboard, 'writeText', {value: async text => {window.copiedOrder = text;}})");
+  await click('.checkout-preview button');
+  await check("window.copiedOrder === document.querySelector('.checkout-preview textarea').value && !JSON.stringify(localStorage).includes('ficticio') && !JSON.stringify(localStorage).includes('0000000001')");
   for (const width of [360,390,430,768,1024,1440]) {
-    await call('Emulation.setDeviceMetricsOverride', { width, height:900, deviceScaleFactor:1, mobile:false });
+    await call('Emulation.setDeviceMetricsOverride', { width, height:900, deviceScaleFactor:1, mobile:width < 600 });
     const stats = await evaluate("({ width:innerWidth, client:document.documentElement.clientWidth, scroll:document.documentElement.scrollWidth })");
     if (stats.scroll > stats.client) throw Error(JSON.stringify(stats));
     console.log(JSON.stringify(stats));
@@ -137,7 +221,7 @@ try {
   await evaluate("localStorage.setItem('baku-cart-v1', '{broken')");
   await reload();
   await check("document.querySelectorAll('.cart-item').length === 0 && Boolean(document.querySelector('.cart-warning'))");
-  console.log('PASS: different personalizations, three identical units, double click, editing, quantities, deletion, persistence, subtotal, WhatsApp, delivery, obsolete and malformed storage.');
+  console.log('PASS: different personalizations, three identical units, double click, editing, quantities, deletion, persistence, subtotal, pickup, contact validation, pin click/drag, explicit geolocation, map failure, private WhatsApp copy, delivery, obsolete and malformed storage.');
 } finally {
   ws?.close();
   edge.kill();

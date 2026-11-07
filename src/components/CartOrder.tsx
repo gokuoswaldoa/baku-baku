@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { OrderCheckout } from './OrderCheckout';
 import { Configurator } from './Configurator';
-import { cartStorageKey, cartTotals, maxLines, maxQuantity, restoreCart, samePersonalization, validPersonalization, validQuantity, type Personalization } from '../cart';
-import { availability, cartConsultationUrl, deliveryReference, modalities, product } from '../order-config';
+import { cartStorageKey, maxLines, maxQuantity, restoreCart, samePersonalization, validPersonalization, validQuantity, type Personalization } from '../cart';
+import { product } from '../order-config';
 
 export function CartOrder() {
   const [cart, setCart] = useState(() => {
@@ -10,13 +10,10 @@ export function CartOrder() {
     catch { return { items: [], needsReview: true }; }
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [modality, setModality] = useState<keyof typeof modalities>('recogida');
-  const [neighborhood, setNeighborhood] = useState('');
   const [notice, setNotice] = useState('');
   const [storageError, setStorageError] = useState(false);
   const lastAdd = useRef(-Infinity);
   const editing = cart.items.find(item => item.id === editingId) ?? null;
-  const totals = cartTotals(cart.items);
 
   useEffect(() => {
     try {
@@ -58,14 +55,10 @@ export function CartOrder() {
     setNotice('Personalización eliminada.');
   }
 
-  function consult(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!cart.items.length || cart.needsReview || editing || (modality === 'entrega' && !neighborhood.trim())) return;
-    if (cart.items.some(item => !validPersonalization(item) || !validQuantity(item.quantity))) {
-      setCart(current => ({ ...current, needsReview: true }));
-      return;
-    }
-    window.open(cartConsultationUrl(cart.items, modality, neighborhood), '_blank', 'noopener,noreferrer');
+  function validateItems() {
+    if (cart.items.every(item => validPersonalization(item) && validQuantity(item.quantity))) return true;
+    setCart(current => ({ ...current, needsReview: true }));
+    return false;
   }
 
   return (
@@ -108,33 +101,7 @@ export function CartOrder() {
             </li>
           ))}
         </ul>
-        <form className="cart-checkout" onSubmit={consult}>
-          <div className="cart-subtotal" aria-live="polite">
-            <p>{totals.quantity} bolas en total</p>
-            <strong>Subtotal provisional: ${totals.subtotal} MXN</strong>
-            <p className="order-note">Productos únicamente. Envío por confirmar.</p>
-          </div>
-          <div>
-            <label className="modality">Modalidad del pedido
-              <select value={modality} onChange={event => setModality(event.target.value === 'entrega' ? 'entrega' : 'recogida')}>
-                <option value="recogida">{modalities.recogida}</option>
-                <option value="entrega">{modalities.entrega}</option>
-              </select>
-            </label>
-            {modality === 'entrega' ? (
-              <>
-                <label className="modality">Colonia (obligatoria)
-                  <input name="colonia" type="text" required maxLength={120} pattern={'.*\\S.*'} value={neighborhood} onChange={event => setNeighborhood(event.target.value)} />
-                </label>
-                <p className="order-note">{deliveryReference} {availability.delivery}</p>
-              </>
-            ) : <p className="order-note">{availability.pickup}</p>}
-          </div>
-          <div>
-            <button className="action" type="submit" disabled={!cart.items.length || cart.needsReview || Boolean(editing)}><MessageCircle aria-hidden="true" /> Consultar pedido por WhatsApp</button>
-            <p className="order-note">{editing ? 'Guarda o cancela la edición antes de enviar.' : availability.orderNote}</p>
-          </div>
-        </form>
+        <OrderCheckout items={cart.items} blocked={cart.needsReview} editing={Boolean(editing)} validateItems={validateItems} />
       </section>
     </>
   );
