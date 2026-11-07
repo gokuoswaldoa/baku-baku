@@ -1,0 +1,15 @@
+# Local preparation only. No remote project is linked.
+project_id = "baku-baku-local"
+
+[auth]
+enable_signup = false
+enable_anonymous_sign_ins = false
+minimum_password_length = 12
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+# Keep the gateway closed to unauthenticated callers until a later approved phase.
+[functions.submit-order]
+verify_jwt = true
