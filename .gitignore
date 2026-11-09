@@ -6,14 +6,20 @@ dist-ssr/
 coverage/
 *.tsbuildinfo
 *.log
+*.tmp
 
 # Environment files and credentials
 .env
 .env.*
 !.env.example
+.envrc
+.dev.vars
+.dev.vars.*
 *.local
 .npmrc
 .netrc
+.pgpass
+.git-credentials
 *.pem
 *.key
 *.pfx
@@ -26,6 +32,10 @@ secrets/
 # Local tools, backups and browser profiles
 /.backup-*/
 /.validacion-baku/
+/.wrangler/
+/.cloudflare/
+/.tmp/
+/tmp/
 /.claude/
 /.agents/
 /agent/
@@ -38,4 +48,16 @@ Thumbs.db
 # Supabase CLI local metadata
 /supabase/.temp/
 /supabase/.branches/
+
+# Private encrypted backups and accidental local backup folders
+*.dpapi
+*.aesgcm
+*.bak
+*.backup
+*.dump
+*.sql.gz
+*.age
+/private-backups/
+/backups/
+/recovery-keys/
 

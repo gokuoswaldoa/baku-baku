@@ -1,12 +1,24 @@
 # Checkout con Supabase
 
-La compilación pública conserva la consulta por WhatsApp. El registro se habilita únicamente en desarrollo, con Vite enlazado a `127.0.0.1:5173` y un upstream Supabase de loopback. El navegador manda el checkout por POST al gateway del mismo origen. El gateway valida origen y método, e incorpora el JWT local y el token temporal solo del lado servidor. La Edge Function está desactivada por defecto, requiere el token de servidor y usa su propia credencial para llamar a la RPC.
+La compilación por defecto conserva la consulta por WhatsApp. El proxy de Vite sigue disponible para desarrollo en `127.0.0.1:5173` con Supabase de loopback. El módulo 5C añade un intermediario independiente, preparado exclusivamente para 5B. La Edge Function permanece cerrada por defecto, requiere un token de servidor y usa su propia credencial para llamar a la RPC.
+
+## Lanzamiento por WhatsApp
+
+`npm run build` genera `dist` en modo `whatsapp`. Ese modo omite el registro automático aunque esté presente `VITE_ORDER_INTAKE_GATEWAY`. No requiere credenciales ni funciones de servidor para publicar el sitio estático en Cloudflare Pages. Cargar únicamente `dist` tras la aprobación de publicación.
+
+La Bola de Fuego XL cuesta $80 MXN por unidad. El taller atiende sábados y domingos de 2:00 p. m. a 8:00 p. m., hora de Temixco. Para Temixco y alrededores se muestran estimados de $35 MXN para trayectos de unos 10 a 15 minutos y $55 MXN para trayectos más lejanos dentro de cobertura. El taller confirma disponibilidad, tarifa, importe final y tiempo por WhatsApp. Para recogida comparte la dirección exacta al confirmar.
+
+El cliente revisa el resumen y abre WhatsApp con el pedido precargado. El envío se completa al pulsar Enviar en el chat. El parámetro `text` de `wa.me` contiene los datos de contacto y entrega codificados, sin cifrado dentro de la URL. El sitio no registra esa URL ni la guarda en el almacenamiento del navegador. Copiar pedido sigue disponible si el mensaje no aparece en WhatsApp. Antes de reactivar el registro automático, sincronizar el precio del catálogo SQL con los $80 MXN publicados.
+
+Para repetir la prueba de navegador, usar el procedimiento local del intermediario 5C más abajo. El arnés comprueba primero la versión de lanzamiento en `dist` con Supabase bloqueado y luego la variante de integración con un servidor simulado.
+
+## Integración de registro
 
 La migración 007 prepara `submit_checkout_request` con permiso de ejecución exclusivo para `service_role`. Reutiliza la transacción y las reglas de catálogo de `submit_order_request`. La dirección escrita y el pin quedan en contacto, y el destinatario queda en entrega dentro de la misma transacción. El subtotal se calcula en SQL. La cobertura y la tarifa definitiva siguen pendientes, con las referencias vigentes.
 
 El carrito sigue mostrando el precio de la configuración comercial. Si difiere del precio efectivo del catálogo SQL, el servidor rechaza el pedido. Mantener ambos valores sincronizados mientras el carrito no lea el catálogo remoto.
 
-El folio es el UUID del pedido. Si la red falla, el checkout conserva la clave y el contenido en memoria para reintentar el mismo registro. Un cambio de contenido con la misma clave da conflicto. El cliente solo recibe folio y subtotal. Después de recibirlos puede copiar el resumen y abrir el chat por separado. La URL de WhatsApp no contiene el pedido. El navegador no guarda datos de contacto en localStorage ni sessionStorage. Al recargar se pierde el reintento pendiente. Si se cerró la página tras un resultado incierto, hay que consultar al negocio antes de registrar de nuevo.
+El folio es el UUID del pedido. Si la red falla, el checkout conserva la clave y el contenido en memoria para reintentar el mismo registro. Un cambio de contenido con la misma clave da conflicto. El cliente solo recibe folio y subtotal. El folio se añade al resumen que se precarga en WhatsApp. El sitio no guarda datos de contacto en localStorage ni sessionStorage. Al recargar se pierde el reintento pendiente. Si se cerró la página tras un resultado incierto, hay que consultar al negocio antes de registrar de nuevo.
 
 ## Pruebas desechables
 
@@ -17,5 +29,43 @@ El folio es el UUID del pedido. Si la red falla, el checkout conserva la clave y
 - `supabase/tests/checkout_submission.sql` prueba permisos de roles, persistencia, subtotal y reintentos con rollback. Ejecutarlo sobre la base de prueba vacía antes del test HTTP. Al terminar, detener el stack de la copia aislada y retirar sus credenciales locales.
 
 ## Despliegue futuro
+
+### Intermediario 5C
+
+El proyecto documenta Cloudflare Pages como hosting previsto; el repositorio no identifica un sitio publicado. La plantilla `wrangler.5b.example.toml` prepara [Workers con activos estáticos](https://developers.cloudflare.com/workers/static-assets/binding/) y un Durable Object SQLite [compatible con Workers Free](https://developers.cloudflare.com/workers/platform/pricing/). Sirve `dist` y `POST /api/checkout/submit-order` en el mismo origen. No se ha desplegado. El destino HTTPS se fija en código a 5B, se rechazan redirecciones y se exige un JWT legado con claims `anon` y referencia 5B. Nunca se usa una clave privilegiada en el Worker.
+
+El Worker exige origen exacto, JSON sin compresión de hasta 64 KiB y una clave UUID de idempotencia. Limita a 8 intentos por IP y 60 globales por minuto. Usa la IP del perímetro de Cloudflare, nunca cabeceras de IP aportadas por el cliente, y conserva solo el último contador con identificadores derivados por HMAC. No registra el cuerpo ni devuelve errores del upstream. PostgreSQL sigue siendo la autoridad de precios e idempotencia. Los límites no distinguen a personas de bots y un ataque distribuido puede agotar la cuota gratuita o bloquear temporalmente a clientes. Antes de abrir una ruta pública, evaluar un reto verificado en servidor y límites en el perímetro; para 5B, usar acceso privado.
+
+Pruebas sin Docker: `node --experimental-strip-types --test tests/checkout-worker.test.mjs`. Tras `npm run build`, en PowerShell ejecutar `$env:VITE_ORDER_INTAKE_GATEWAY='true'; npm exec --offline -- vite build --outDir .validacion-baku/dist-5c` y retirar la variable del proceso; después ejecutar `node --experimental-strip-types tests/cart.browser.mjs --worker`. El navegador usa un upstream simulado y un puerto local libre. La variable de Vite solo habilita el cliente y no es un secreto.
+
+Para validar contra 5B desde Node, cargar exclusivamente los archivos ignorados `.env.5b-cloud.local` y `.env.5b-cloud.secrets.local` con `node --experimental-strip-types --env-file=.env.5b-cloud.local --env-file=.env.5b-cloud.secrets.local tests/checkout-worker.5b.mjs --closed`. El modo `--closed` envía un cuerpo vacío y exige que 5B devuelva `intake_disabled`. Antes de abrir una ventana de escritura, verificar que la entrada y la autorización temporal caduquen del lado servidor aunque se pierda la conexión del equipo de pruebas. Tras esa verificación y con autorización, ejecutar el mismo comando sin `--closed` con `BAKU_5B_ALLOW_WRITE=yes` y el token de 5B. El ensayo guarda solo dos pedidos ficticios. Cerrar la entrada, retirar el token y repetir `--closed`. No es necesario publicar el Worker para este ensayo.
+
+Verificación 5C del 8 de noviembre de 2026: Supabase CLI confirmó el destino `baku-baku-5b` (`izogjwztgkrvlpjyxjhq`), la función v7 con JWT activo y la ausencia de `ORDER_INTAKE_TOKEN`. La prueba HTTP a través del intermediario obtuvo `503 intake_disabled`. Una consulta de solo lectura confirmó dos pedidos previos (una recogida y una entrega) y cero claves de idempotencia duplicadas. No se abrió la entrada ni se crearon pedidos: la función actual no aplica caducidad, por lo que el cierre dependería de una segunda operación remota que puede fallar.
+
+Un despliegue de hosting exige autorización separada, un sitio aislado con HTTPS y acceso privado, el Durable Object, `CHECKOUT_ORIGIN` exacto y los bindings secretos `CHECKOUT_5B_ANON_JWT` y `CHECKOUT_5B_INTAKE_TOKEN`. Nunca poner estos valores en variables `VITE_*`, archivos versionados ni logs. Mantener `CHECKOUT_ENABLED=false` fuera de la ventana. Verificar el runtime de Cloudflare antes de abrir tráfico. La plantilla no es utilizable para producción porque el upstream está fijado a 5B.
+
+### Proyecto Cloud 5B
+
+El destino de pruebas es `izogjwztgkrvlpjyxjhq`. Preparar un directorio temporal con su propio vínculo y sin copiar `.env.local`, `supabase/.temp` ni datos del proyecto principal. Tras autorización, verificar que la referencia devuelta por el vínculo y por la CLI coincide exactamente con la de 5B. La 005 está presente en la copia de trabajo. Incluirla explícitamente junto con 001–004, 006 y 007.
+
+Copiar `supabase/tests/fixtures/cloud-5b-survey.sql` como `202611060000_fictional_survey.sql` solo en el directorio temporal. Genera las 16 filas ficticias y las políticas previas que exige la 005. La fixture revoca explícitamente los permisos de los roles públicos desde su primera transacción. La 002 carga el catálogo y el arnés genera los pedidos sintéticos.
+
+`.env.5b-cloud.local` y `.env.5b-cloud.secrets.local` están excluidos de Git. El segundo se completa únicamente con el JWT legado `anon` del proyecto 5B y un token de entrada temporal. Usarlos solo en Node. La verificación del JWT de Edge se mantiene activa. Después de autorizar la configuración y el despliegue, usar `supabase functions deploy submit-order --use-api --project-ref izogjwztgkrvlpjyxjhq` para empaquetar sin Docker. [Supabase CLI](https://supabase.com/docs/reference/cli/supabase-config)
+
+El arnés se ejecuta con `node --env-file=.env.5b-cloud.local --env-file=.env.5b-cloud.secrets.local tests/checkout-supabase.integration.mjs --cloud-5b`. Requiere habilitar deliberadamente `BAKU_5B_ALLOW_WRITE=yes` para esa ejecución y configurar `ORDER_ALLOWED_ORIGIN=http://127.0.0.1:5174` en 5B. `ORDER_INTAKE_ENABLED` queda desactivado hasta la ventana autorizada de pruebas. Usar usuarios ficticios para las pruebas posteriores de Auth y MFA y verificar RLS mediante SQL antes de habilitar el Data API para el arnés.
+
+Para reproducir las pruebas de Auth en una base 5B sin usuarios ni pedidos, ejecutar `node tests/cloud5b-auth.integration.mjs` con `BAKU_5B_REF`, `BAKU_5B_URL`, `BAKU_5B_AUTH_RUN=yes`, `BAKU_5B_WORKDIR` (copia aislada) y `BAKU_5B_NPX_JS` (entrada del CLI de npx). Inyectar `BAKU_5B_PUBLIC_KEY` y `BAKU_5B_PROVISIONING_KEY` solo en el proceso. La credencial privilegiada se utiliza exclusivamente en Auth Admin para crear las dos cuentas ficticias confirmadas. Las sesiones se obtienen por contraseña con la clave pública y se verifican con `GET /auth/v1/user`. Las contraseñas, JWT y el secreto TOTP quedan en memoria. [Auth Admin](https://supabase.com/docs/reference/javascript/auth-admin-createuser) · [MFA TOTP](https://supabase.com/docs/guides/auth/auth-mfa/totp)
+
+Con la clave pública, el arnés solicita el catálogo y las siete tablas privadas mediante `GET /rest/v1/<tabla>`. Llama a `POST /rest/v1/rpc/prepare_driver_message`, `confirm_delivery` y `transition_order` con un folio inexistente. Los casos son anónimo, usuario normal AAL1, administrador temporal AAL1 y administrador AAL2 tras el reto TOTP. En AAL2 se verifica lectura de la fixture y el error de negocio del folio inexistente. Al terminar se retira la membresía administrativa. Para repetir sobre el mismo proyecto después del ensayo se requiere autorizar el retiro de las dos cuentas ficticias existentes.
+
+La ejecución en 5B pasó los tres casos de denegación y la validación del JWT AAL2 real. El administrador con TOTP pudo leer los 16 identificadores ficticios y reparto devolvió `22023` para el folio inexistente. Quedaron dos usuarios ficticios, cero administradores activos y cero pedidos. La comprobación de un mensaje de reparto con una entrega elegible queda pendiente.
+
+Para probar el despliegue con pedidos, confirmar primero que 5B tenga cero pedidos y que una llamada firmada a la función devuelva `503 intake_disabled`. Abrir una ventana con un token aleatorio y el origen de 5B. Comprobar con un cuerpo vacío los rechazos sin JWT, sin token y desde otro origen antes de enviar los pedidos ficticios. Desactivar `ORDER_INTAKE_ENABLED`, retirar `ORDER_INTAKE_TOKEN` y comprobar de nuevo el cierre HTTP al terminar. En PowerShell, encerrar cada expresión `('NOMBRE=' + $valor)` entre paréntesis al formar la lista para `WriteAllLines`. Sin ellos se separan nombres y valores, y la función rechaza las solicitudes con 403.
+
+Con los dos pedidos ya guardados y la entrada cerrada, ejecutar el arnés de Auth con `--orders`. Comprueba la persistencia de recogida y entrega, repite los controles REST con datos presentes y usa TOTP real para confirmar cobertura, tarifa y la entrega ficticia. Compara en memoria los campos del mensaje de reparto y retira la membresía temporal.
+
+La versión 1 de `submit-order` pasó el ensayo Cloud en 5B. Se conservaron dos pedidos ficticios con subtotales de 38 000 centavos cada uno. El doble envío concurrente y el reintento conservaron el mismo folio de entrega. Las lecturas privadas y las RPC se probaron con los pedidos presentes. El administrador AAL2 generó el mensaje esperado y se retiró su membresía. La ventana cerró con HTTP 503 y el token temporal fue retirado. El arnés pasa SQL auxiliar en una sola línea para conservar el argumento al invocar npx en Windows.
+
+### Proyecto principal
 
 Con autorización separada, revisar un dry-run que muestre solo 007, aplicarla y comprobar permisos de la RPC y RLS. Completar primero la prueba de Supabase desechable con JWT y runtime reales. Un despliegue de `submit-order` debe mantener `ORDER_INTAKE_ENABLED=false` y verificar el cierre desde fuera. Antes de abrir recepción, preparar un gateway de producción con HTTPS, control de abuso y límites de frecuencia, gestión de credenciales, origen exacto y alertas sin datos personales. Revisar las cuotas gratuitas antes de habilitarlo. El proxy de Vite queda limitado a pruebas locales.

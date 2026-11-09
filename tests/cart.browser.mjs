@@ -3,28 +3,35 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
+import { Readable } from 'node:stream';
 
 const profile = resolve('.validacion-baku/edge-profile-' + process.pid);
 const root = resolve('dist');
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp', '.png': 'image/png' };
-const server = createServer(async (req, res) => {
+async function serveAssets(assetRoot, req, res) {
   try {
-    const file = resolve(root, '.' + decodeURIComponent(req.url === '/' ? '/index.html' : req.url));
-    if (!file.startsWith(root + sep)) throw Error('Invalid path');
+    const file = resolve(assetRoot, '.' + decodeURIComponent(req.url === '/' ? '/index.html' : req.url));
+    if (!file.startsWith(assetRoot + sep)) throw Error('Invalid path');
     res.setHeader('Content-Type', types[extname(file)] || 'application/octet-stream');
     res.end(await readFile(file));
   } catch { res.writeHead(404).end(); }
-});
+}
+const server = createServer((req, res) => serveAssets(root, req, res));
 await new Promise(done => server.listen(0, '127.0.0.1', done));
 const edge = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', [
   '--headless=new', '--disable-gpu', '--disable-background-networking', '--no-first-run',
+  '--no-proxy-server', '--host-resolver-rules=MAP wa.me ~NOTFOUND',
   '--remote-debugging-port=0', '--user-data-dir=' + profile,
   'about:blank',
 ], { windowsHide: true, stdio: 'ignore' });
 let ws;
 let tileFailure = false;
+let checkingLaunch = true;
+let launchApiRequests = 0;
+const whatsAppWindows = [];
 let vite;
 let intake;
+let gateway;
 try {
   let port;
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -39,8 +46,20 @@ try {
   const pending = new Map();
   ws.onmessage = ({ data }) => {
     const msg = JSON.parse(data);
+    if (msg.method === 'Page.windowOpen' && msg.params.url.startsWith('https://wa.me/')) {
+      whatsAppWindows.push(msg.params);
+    }
+    if (checkingLaunch && msg.method === 'Network.requestWillBeSent') {
+      const { type, request } = msg.params;
+      if (type === 'Fetch' || type === 'XHR' || /supabase\.co|\/api\//i.test(request.url)) launchApiRequests++;
+    }
     if (msg.method === 'Fetch.requestPaused') {
-      const requestId = msg.params.requestId;
+      const { requestId, request } = msg.params;
+      if (!request.url.startsWith('https://tile.openstreetmap.org/')) {
+        void call(checkingLaunch ? 'Fetch.failRequest' : 'Fetch.continueRequest',
+          checkingLaunch ? { requestId, errorReason: 'InternetDisconnected' } : { requestId });
+        return;
+      }
       const tile = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVnUAAAAASUVORK5CYII=';
       void (tileFailure
         ? call('Fetch.failRequest', { requestId, errorReason: 'InternetDisconnected' })
@@ -65,7 +84,12 @@ try {
   await call('Page.enable');
   await call('Network.enable');
   await call('Network.setCacheDisabled', {cacheDisabled: true});
-  await call('Fetch.enable', {patterns: [{urlPattern: 'https://tile.openstreetmap.org/*'}]});
+  await call('Fetch.enable', { patterns: [
+    { urlPattern: 'https://tile.openstreetmap.org/*' },
+    { urlPattern: '*://*.supabase.co/*' },
+    { urlPattern: '*/api/*' },
+  ] });
+  await call('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await call('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port });
   for (let attempt = 0; attempt < 40; attempt++) {
     if (await evaluate("Boolean(document.querySelector('.order')) && [...document.images].every(img => img.complete)")) break;
@@ -78,6 +102,35 @@ try {
   };
   const wait = () => new Promise(done => setTimeout(done, 80));
   const click = async selector => { await evaluate('document.querySelector(' + JSON.stringify(selector) + ').click()'); await wait(); };
+  async function verifyWhatsAppNavigation() {
+    await call('Page.bringToFront');
+    const expected = await evaluate("document.querySelector('.checkout-preview a.action').href");
+    const point = await evaluate(`(() => {
+      const link = document.querySelector('.checkout-preview a.action');
+      link.scrollIntoView({ block: 'center', behavior: 'instant' });
+      const bounds = link.getBoundingClientRect();
+      const x = bounds.left + bounds.width / 2;
+      const y = bounds.top + bounds.height / 2;
+      return { x, y, reachable: link.contains(document.elementFromPoint(x, y)) };
+    })()`);
+    assert.equal(point.reachable, true, 'WhatsApp action must be visible and reachable');
+    const { x, y } = point;
+    const before = whatsAppWindows.length;
+    await call('Input.dispatchMouseEvent', { type: 'mousePressed', button: 'left', clickCount: 1, x, y });
+    await call('Input.dispatchMouseEvent', { type: 'mouseReleased', button: 'left', clickCount: 1, x, y });
+    for (let attempt = 0; attempt < 24 && whatsAppWindows.length === before; attempt++) {
+      await new Promise(done => setTimeout(done, 25));
+    }
+    assert.ok(whatsAppWindows[before]?.userGesture && whatsAppWindows[before].url === expected, 'WhatsApp must open the reviewed link from the user gesture');
+    await check("!document.querySelector('.checkout-preview a.action').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))");
+    await wait();
+    assert.equal(whatsAppWindows.length - before, 1, 'A double click must open WhatsApp only once');
+    const { targetInfos } = await call('Target.getTargets');
+    for (const target of targetInfos) {
+      if (target.type === 'page' && target.url === expected) await call('Target.closeTarget', { targetId: target.targetId });
+    }
+    await call('Page.bringToFront');
+  }
   const reload = async () => {
     await call('Page.reload');
     await wait();
@@ -86,6 +139,8 @@ try {
       await new Promise(done => setTimeout(done, 100));
     }
   };
+  await check("document.querySelector('.price-ticket strong').textContent === '$80' && document.querySelector('.order-price strong').textContent === '$80'");
+  await check("document.querySelector('.how').textContent.includes('Sábados y domingos, de 2:00 p. m. a 8:00 p. m.') && document.querySelector('.how').textContent.includes('Temixco y alrededores')");
   await check("document.querySelectorAll('.cart-item').length === 0");
   await click('.order-panel button[type=submit]');
   await check("document.querySelectorAll('.cart-item').length === 0");
@@ -104,7 +159,7 @@ try {
   await check("document.querySelectorAll('.cart-item').length === 2");
   await evaluate("const select = document.querySelector('.cart-controls select'); select.value = '3'; select.dispatchEvent(new Event('change', {bubbles:true}))");
   await wait();
-  await check("document.querySelector('.cart-subtotal').textContent.includes('4 bolas') && document.querySelector('.cart-subtotal').textContent.includes('$380')");
+  await check("document.querySelector('.cart-subtotal').textContent.includes('4 bolas') && document.querySelector('.cart-subtotal').textContent.includes('$320') && document.querySelector('.cart-item').textContent.includes('$80 MXN por unidad · $240 MXN')");
   await click('[aria-label="Editar bola 1"]');
   await click('input[name=acabado]:not(:checked)');
   await new Promise(done => setTimeout(done, 650));
@@ -115,7 +170,7 @@ try {
   await evaluate("window.savedCart = localStorage.getItem('baku-cart-v1')");
   const saved = await evaluate("window.savedCart");
   await reload();
-  await check("document.querySelectorAll('.cart-item').length === 2 && document.querySelector('.cart-controls select').value === '3' && document.querySelector('.cart-subtotal').textContent.includes('$380')");
+  await check("document.querySelectorAll('.cart-item').length === 2 && document.querySelector('.cart-controls select').value === '3' && document.querySelector('.cart-subtotal').textContent.includes('$320')");
 
   const enter = async (name, value) => {
     await evaluate(`(() => {
@@ -133,13 +188,30 @@ try {
     throw Error('Checkout condition did not become ready: ' + expression);
   };
   const review = '.cart-checkout button[type=submit]';
+  await check("document.querySelector('.cart-checkout button[type=submit]').textContent.includes('Revisar pedido para WhatsApp')");
   await click(review);
   await check("!document.querySelector('.checkout-preview') && !document.querySelector('input[name=street]')");
-  await enter('customerName', 'Contacto ficticio');
+  await enter('customerName', 'Contacto ficticio Álvarez 🥢');
   await enter('customerPhone', '0000000001');
   await click(review);
-  await check("document.querySelector('.checkout-preview textarea').value.includes('3 × Bola de Fuego XL') && document.querySelector('.checkout-preview textarea').value.includes('Mayo chipotle') && document.querySelector('.checkout-preview textarea').value.includes('$380 MXN') && document.querySelector('.checkout-preview textarea').value.includes('Rubén Jaramillo, Temixco') && !document.querySelector('.checkout-preview textarea').value.includes('Dirección:')");
-  await check("new URL(document.querySelector('.checkout-preview a.action').href).search === ''");
+  await check(`(() => {
+    const message = document.querySelector('.checkout-preview textarea').value;
+    return ['3 × Bola de Fuego XL','Mayo chipotle','Precio por unidad: $80 MXN','Subtotal de productos: $320 MXN','Rubén Jaramillo, Temixco','Contacto ficticio Álvarez 🥢','0000000001'].every(value => message.includes(value))
+      && !/Dirección:|Folio|Envío estimado/.test(message);
+  })()`);
+  const prefilledChatLink = `(() => {
+    const link = document.querySelector('.checkout-preview a.action');
+    const message = document.querySelector('.checkout-preview textarea').value;
+    const url = new URL(link.href);
+    return link.href === 'https://wa.me/527772872695?text=' + encodeURIComponent(message)
+      && url.searchParams.get('text') === message
+      && link.textContent === 'Enviar pedido por WhatsApp' && link.target === '_blank'
+      && link.relList.contains('noopener') && link.relList.contains('noreferrer')
+      && document.querySelector('.how a.contact').href === 'https://wa.me/527772872695';
+  })()`;
+  await check(prefilledChatLink);
+  await verifyWhatsAppNavigation();
+  await call('Emulation.setDeviceMetricsOverride', { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
   await evaluate("const mode = document.querySelector('.cart-checkout select'); mode.value = 'entrega'; mode.dispatchEvent(new Event('change', {bubbles:true}));");
   await wait();
   await click(review);
@@ -147,7 +219,7 @@ try {
   for (const [name, value] of Object.entries({
     recipientName: 'Destinatario ficticio', recipientPhone: '0000000002',
     street: 'Calle ficticia', exterior: 'S/N', interior: 'B', colonia: 'Colonia ficticia',
-    municipality: 'Temixco', postalCode: '00000', references: 'Puerta ficticia',
+    municipality: 'Temixco', postalCode: '00000', references: 'Puerta ficticia 🔥 #2 & timbre + 50% ¿sí?',
   })) await enter(name, value);
   await click(review);
   await check("!document.querySelector('.checkout-preview')");
@@ -193,12 +265,22 @@ try {
   await click(review);
   await check(`(() => {
     const message = document.querySelector('.checkout-preview textarea').value;
-    return ['Contacto ficticio','0000000001','Destinatario ficticio','0000000002','Calle ficticia S/N, interior B','Colonia ficticia','C. P. 00000','Puerta ficticia','Pin: 18.85, -99.23','$35 MXN cerca','$55 MXN lejos','$380 MXN','pendientes de confirmación'].every(value => message.includes(value))
-      && !message.includes('google.com/maps') && !new URL(document.querySelector('.checkout-preview a.action').href).search;
+    return ['Contacto ficticio Álvarez 🥢','0000000001','Destinatario ficticio','0000000002','Calle ficticia S/N, interior B','Colonia ficticia','C. P. 00000','Puerta ficticia 🔥 #2 & timbre + 50% ¿sí?','Pin: 18.85, -99.23','$35 MXN','10 a 15 minutos','$55 MXN','Subtotal de productos: $320 MXN','Total estimado con envío: $355 o $375 MXN','Confirmamos cobertura y tarifa final','importe final'].every(value => message.includes(value))
+      && !message.includes('google.com/maps') && !message.includes('Folio');
   })()`);
-  await evaluate("Object.defineProperty(navigator.clipboard, 'writeText', {value: async text => {window.copiedOrder = text;}})");
+  await check(prefilledChatLink);
+  await verifyWhatsAppNavigation();
+  await check("document.querySelector('.checkout-preview').textContent.includes('Pulsa Enviar en el chat') && document.querySelector('.cart-checkout').textContent.includes('Abrir WhatsApp no confirma el pedido') && document.querySelector('.cart-subtotal').textContent.includes('$355 o $375 MXN')");
+  await evaluate("Object.defineProperty(navigator.clipboard, 'writeText', {configurable: true, value: async text => {window.copiedOrder = text;}})");
   await click('.checkout-preview button');
-  await check("window.copiedOrder === document.querySelector('.checkout-preview textarea').value && !JSON.stringify(localStorage).includes('ficticio') && !JSON.stringify(localStorage).includes('0000000001')");
+  await check("window.copiedOrder === document.querySelector('.checkout-preview textarea').value && [localStorage, sessionStorage].every(storage => !/fictici|000000000[12]|wa\.me/.test(JSON.stringify(storage)))");
+  await evaluate("Object.defineProperty(navigator.clipboard, 'writeText', {configurable: true, value: async () => {throw Error('Clipboard unavailable');}})");
+  await click('.checkout-preview button');
+  await check(`(() => {
+    const text = document.querySelector('.checkout-preview textarea');
+    return document.activeElement === text && text.selectionStart === 0 && text.selectionEnd === text.value.length
+      && document.querySelector('.cart-checkout').textContent.includes('Copia el texto seleccionado');
+  })()`);
   for (const width of [360,390,430,768,1024,1440]) {
     await call('Emulation.setDeviceMetricsOverride', { width, height:900, deviceScaleFactor:1, mobile:width < 600 });
     const stats = await evaluate("({ width:innerWidth, client:document.documentElement.clientWidth, scroll:document.documentElement.scrollWidth })");
@@ -211,10 +293,10 @@ try {
     }
   }
   await click('[aria-label="Eliminar bola 2"]');
-  await check("document.querySelectorAll('.cart-item').length === 1 && document.querySelector('.cart-subtotal').textContent.includes('$285')");
+  await check("document.querySelectorAll('.cart-item').length === 1 && document.querySelector('.cart-subtotal').textContent.includes('$240')");
   await evaluate("const quantity = document.querySelector('.cart-controls select'); quantity.value = '0'; quantity.dispatchEvent(new Event('change', {bubbles:true}))");
   await wait();
-  await check("document.querySelector('.cart-subtotal').textContent.includes('$285')");
+  await check("document.querySelector('.cart-subtotal').textContent.includes('$240')");
   // An obsolete option, invalid quantity, and a duplicate identifier must all be discarded.
   await evaluate("const saved = JSON.parse(localStorage.getItem('baku-cart-v1')); const good = saved.items[0]; saved.items.push({...good, id:'obsolete', dip:'Dip retirado'}, {...good, id:'negative', quantity:-2}, {...good, id:'fraction', quantity:1.5}, {...good}); localStorage.setItem('baku-cart-v1',JSON.stringify(saved))");
   await reload();
@@ -224,19 +306,58 @@ try {
   await evaluate("localStorage.setItem('baku-cart-v1', '{broken')");
   await reload();
   await check("document.querySelectorAll('.cart-item').length === 0 && Boolean(document.querySelector('.cart-warning'))");
-  console.log('PASS: different personalizations, three identical units, double click, editing, quantities, deletion, persistence, subtotal, pickup, contact validation, pin click/drag, explicit geolocation, map failure, private WhatsApp copy, delivery, obsolete and malformed storage.');
+  assert.equal(launchApiRequests, 0, 'The WhatsApp launch must not make API requests');
+  checkingLaunch = false;
+  console.log('PASS: WhatsApp launch with zero API requests, desktop pickup and mobile delivery, prefilled text with accents and emoji, duplicate click protection, estimates, and manual copy.');
 
   const requests = [];
   const folio = '12345678-0000-4000-8000-000000000001';
-  const localJwt = 'test-gateway-jwt';
-  const localToken = 'test-intake-token';
+  const workerMode = process.argv.includes('--worker');
+  const workerFixtures = workerMode && await import('./fixtures/checkout-worker.mjs');
+  const localJwt = workerMode ? workerFixtures.fakeJwt() : 'test-gateway-jwt';
+  const localToken = workerMode ? workerFixtures.fakeToken : 'test-intake-token';
+  let localOrigin;
+  if (workerMode) {
+    const { handleCheckout, CHECKOUT_PATH, UPSTREAM } = await import('../server/checkout-worker.ts');
+    const assetRoot = resolve('.validacion-baku/dist-5c');
+    const fetchUpstream = async (url, init) => {
+      assert.equal(url, UPSTREAM);
+      const path = new URL(url).pathname;
+      const headers = Object.fromEntries(new Headers(init.headers));
+      requests.push({ url: path, headers, body: new TextDecoder().decode(init.body) });
+      const status = [503, 200, 422, 200][requests.length - 1] ?? 500;
+      return Response.json(status === 200 ? { id: folio, subtotal_cents: 32000 } : {}, { status });
+    };
+    let env;
+    gateway = createServer(async (req, res) => {
+      if (new URL(req.url, localOrigin).pathname !== CHECKOUT_PATH) return serveAssets(assetRoot, req, res);
+      const headers = new Headers(req.headers);
+      headers.set('CF-Connecting-IP', req.socket.remoteAddress);
+      const request = new Request(localOrigin + req.url, {
+        method: req.method, headers,
+        ...(req.method === 'POST' && { body: Readable.toWeb(req), duplex: 'half' }),
+      });
+      const result = await handleCheckout(request, env, { fetchUpstream, loopbackTest: true });
+      res.writeHead(result.status, Object.fromEntries(result.headers)).end(await result.text());
+    });
+    await new Promise(done => gateway.listen(0, '127.0.0.1', done));
+    localOrigin = 'http://127.0.0.1:' + gateway.address().port;
+    env = workerFixtures.fixtureEnv(localOrigin);
+    const page = await (await fetch(localOrigin)).text();
+    const entry = page.match(/<script[^>]+src="([^"]+\.js)"/)?.[1];
+    assert.ok(entry);
+    const bundle = await (await fetch(localOrigin + entry)).text();
+    for (const marker of [localToken, localJwt, 'CHECKOUT_5B_INTAKE_TOKEN', 'X-Intake-Token', UPSTREAM]) {
+      assert.equal(bundle.includes(marker), false);
+    }
+  } else {
   intake = createServer(async (req, res) => {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     requests.push({ url: req.url, headers: req.headers, body: Buffer.concat(chunks).toString() });
     // Simulate a lost success response, then replay and a catalog rejection.
     const status = [503, 200, 422, 200][requests.length - 1] ?? 500;
-    const payload = status === 200 ? { id: folio, subtotal_cents: 38000 } : { error: 'test_error' };
+    const payload = status === 200 ? { id: folio, subtotal_cents: 32000 } : { error: 'test_error' };
     res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(payload));
   });
   await new Promise(done => intake.listen(0, '127.0.0.1', done));
@@ -247,13 +368,14 @@ try {
   const { createServer: createVite } = await import('vite');
   vite = await createVite();
   await vite.listen();
-  const localOrigin = 'http://127.0.0.1:5173';
+  localOrigin = 'http://127.0.0.1:5173';
+  const clientModule = await (await fetch(localOrigin + '/src/checkout-submission.ts')).text();
+  assert.equal(clientModule.includes(localToken) || clientModule.includes(localJwt), false);
+  }
   const route = localOrigin + '/api/checkout/submit-order';
   assert.equal((await fetch(route, { method: 'POST', headers: { origin: 'https://untrusted.test' } })).status, 403);
   assert.equal((await fetch(route)).status, 403);
   assert.equal(requests.length, 0);
-  const clientModule = await (await fetch(localOrigin + '/src/checkout-submission.ts')).text();
-  assert.equal(clientModule.includes(localToken) || clientModule.includes(localJwt), false);
   await call('Emulation.setDeviceMetricsOverride', { width: 390, height: 900, deviceScaleFactor: 1, mobile: true });
   await call('Page.navigate', { url: localOrigin });
   await ready("Boolean(document.querySelector('.order-panel'))");
@@ -294,8 +416,8 @@ try {
   await check(`(() => {
     const message = document.querySelector('.checkout-preview textarea').value;
     return message.includes('${folio}') && message.includes('Calle ficticia') && !message.includes('Calle editada')
-      && message.includes('$380 MXN') && message.includes('pendientes de confirmación')
-      && new URL(document.querySelector('.checkout-preview a.action').href).search === ''
+      && message.includes('$320 MXN') && message.includes('Confirmamos cobertura y tarifa final')
+      && new URL(document.querySelector('.checkout-preview a.action').href).searchParams.get('text') === message
       && !JSON.stringify(localStorage).includes('ficticio') && !JSON.stringify(sessionStorage).includes('0000000001')
       && document.documentElement.scrollWidth === document.documentElement.clientWidth;
   })()`);
@@ -309,11 +431,12 @@ try {
   await click(review);
   assert.equal(requests.length, 4);
   await check("!document.querySelector('.checkout-preview textarea').value.includes('Dirección:')");
-  console.log('PASS: 390 px controlled Vite gateway, origin gate, contact-only pickup, delivery payload, duplicate clicks, stable retries, catalog rejection, folio, and no PII persistence.');
+  console.log('PASS: 390 px ' + (workerMode ? 'same-origin Worker' : 'controlled Vite gateway') + ', origin gate, contact-only pickup, delivery payload, duplicate clicks, stable retries, catalog rejection, folio, and no PII persistence.');
 } finally {
   ws?.close();
   edge.kill();
   server.close();
   await vite?.close();
   intake?.close();
+  gateway?.close();
 }

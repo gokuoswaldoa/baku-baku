@@ -1,5 +1,7 @@
 # Supabase — preparación del módulo 4A
 
+El cierre posterior de la encuesta agrega una quinta migración dirigida a la base existente con public.leads y 16 respuestas. Depende de las cuatro migraciones de infraestructura y no es aplicable a una base vacía sin esa encuesta. Su respaldo privado, precondiciones y pruebas se documentan en [SURVEY_CLOSURE.md](SURVEY_CLOSURE.md).
+
 Esta carpeta prepara la persistencia sin conectar la aplicación. El diseño, configurador, carrito y WhatsApp actuales siguen utilizando su flujo local. No hay proyecto remoto vinculado ni secretos reales.
 
 ## Archivos y contrato
@@ -79,7 +81,6 @@ Las variables VITE_* son públicas dentro del bundle. Las claves secret y servic
 Desde PowerShell en la raíz del repositorio, con Node/npm disponibles, ejecutar:
 
 ~~~powershell
-Set-Location -LiteralPath 'C:\Users\oswal\OneDrive\Escritorio\baku-baku'
 npx --yes supabase@2 login
 $projectRef = Read-Host 'Project ref del proyecto Free'
 npx --yes supabase@2 link --project-ref $projectRef

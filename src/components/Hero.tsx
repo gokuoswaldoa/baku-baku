@@ -11,7 +11,7 @@ export function Hero() {
         <div className="hero-actions">
           <p className="hero-description">Bola de arroz al panko con relleno generoso de surimi y queso crema estilo Tampico, partida en 4 piezas.</p>
           <div className="hero-order">
-            <p className="price-ticket brush"><strong>${product.provisionalPrice}</strong> <span>MXN<br /> prov.</span></p>
+            <p className="price-ticket brush"><strong>${product.unitPrice}</strong> <span>MXN<br /> c/u</span></p>
             <a className="action" href="#configurador">Arma tu Baku <ArrowRight aria-hidden="true" /></a>
           </div>
         </div>

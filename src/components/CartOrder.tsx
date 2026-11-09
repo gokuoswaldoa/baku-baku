@@ -81,7 +81,7 @@ export function CartOrder() {
               <div>
                 <h3>{index + 1}. {product.name}</h3>
                 <p>{item.finish} · {item.toppings.join(', ') || 'Sin toppings'} · Dip: {item.dip}</p>
-                <p>${product.provisionalPrice} MXN por unidad · ${item.quantity * product.provisionalPrice} MXN provisional</p>
+                <p>${product.unitPrice} MXN por unidad · ${item.quantity * product.unitPrice} MXN</p>
               </div>
               <div className="cart-controls">
                 <button type="button" aria-label={'Reducir cantidad de bola ' + (index + 1)} disabled={item.quantity <= 1} onClick={() => changeQuantity(item.id, item.quantity - 1)}>−</button>

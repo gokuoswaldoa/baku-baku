@@ -3,7 +3,7 @@ import { MessageCircle } from 'lucide-react';
 import { cartTotals, type CartItem } from '../cart';
 import { checkoutMessage, readCheckout } from '../checkout';
 import { checkoutSubmissionBody, checkoutSubmissionEnabled, registerCheckout } from '../checkout-submission';
-import { availability, deliveryReference, modalities, whatsapp } from '../order-config';
+import { availability, business, deliveryReference, deliveryTotalEstimate, modalities, whatsapp } from '../order-config';
 import { DeliveryLocation } from './DeliveryLocation';
 
 function ContactPhone({ name, label }: { name: string; label: string }) {
@@ -37,7 +37,9 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
   const pending = useRef<Submission>();
   const registered = useRef<{ body: string; message: string }>();
   const inFlight = useRef(false);
+  const lastWhatsAppOpen = useRef(-Infinity);
   const previewTitle = useRef<HTMLHeadingElement>(null);
+  const previewText = useRef<HTMLTextAreaElement>(null);
   const totals = cartTotals(items);
   const message = checkoutSubmissionEnabled || (preview?.items === items && !blocked && !editing)
     ? preview?.message : undefined;
@@ -112,9 +114,11 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
     if (!message) return;
     try {
       await navigator.clipboard.writeText(message);
-      setFeedback('Mensaje copiado. Abre el chat del negocio y pégalo.');
+      setFeedback('Pedido copiado. Si el mensaje no aparece en WhatsApp, pégalo en el chat del negocio.');
     } catch {
-      setFeedback('No se pudo copiar. Selecciona y copia el mensaje manualmente.');
+      previewText.current?.focus();
+      previewText.current?.select();
+      setFeedback('No se pudo copiar automáticamente. Copia el texto seleccionado y pégalo en WhatsApp.');
     }
   }
 
@@ -122,8 +126,13 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
     <form className="cart-checkout" autoComplete="off" onChange={clearPreview} onSubmit={prepare}>
       <div className="cart-subtotal" aria-live="polite">
         <p>{totals.quantity} bolas en total</p>
-        <strong>Subtotal provisional: ${totals.subtotal} MXN</strong>
-        <p className="order-note">Productos únicamente. Envío por confirmar.</p>
+        <strong>Subtotal de productos: ${totals.subtotal} MXN</strong>
+        {modality === 'entrega' && totals.quantity > 0 && (
+          <>
+            <p className="order-note">{deliveryReference}</p>
+            <p className="order-note">{deliveryTotalEstimate(totals.subtotal)} {availability.delivery}</p>
+          </>
+        )}
       </div>
       <div className="checkout-details">
         <label className="modality">Modalidad del pedido
@@ -174,7 +183,7 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
               </label>
             </fieldset>
             <DeliveryLocation onChange={clearPreview} />
-            <p className="order-note">{deliveryReference} {availability.delivery}</p>
+            <p className="order-note">Cobertura de entrega: {business.deliveryCoverage}.</p>
           </>
         ) : <p className="order-note">{availability.pickup}</p>}
       </div>
@@ -192,10 +201,23 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
         {message && (
           <section className="checkout-preview" aria-labelledby="checkout-preview-title">
             <h3 id="checkout-preview-title" ref={previewTitle} tabIndex={-1}>Resumen para el negocio</h3>
-            <p className="order-note">Copia el mensaje, abre el chat del negocio y pégalo para enviar tu consulta.</p>
-            <textarea aria-label="Mensaje de WhatsApp del pedido" readOnly rows={9} value={message} />
-            <button type="button" className="cart-text-button" onClick={copyMessage}>Copiar mensaje</button>
-            <a className="action" href={whatsapp} target="_blank" rel="noopener noreferrer">Abrir WhatsApp del negocio</a>
+            <p className="order-note">WhatsApp abrirá con los datos del pedido listos para enviar. Pulsa Enviar en el chat.</p>
+            <textarea ref={previewText} aria-label="Mensaje de WhatsApp del pedido" readOnly rows={9} value={message} />
+            <a
+              className="action"
+              href={whatsapp + '?text=' + encodeURIComponent(message)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={event => {
+                const now = performance.now();
+                if (now - lastWhatsAppOpen.current < 1000) {
+                  event.preventDefault();
+                  return;
+                }
+                lastWhatsAppOpen.current = now;
+              }}
+            >Enviar pedido por WhatsApp</a>
+            <button type="button" className="cart-text-button" onClick={copyMessage}>Copiar pedido</button>
           </section>
         )}
       </div>

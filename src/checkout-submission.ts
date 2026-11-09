@@ -18,9 +18,11 @@ const optionIds: Record<CartItem['finish'] | CartItem['toppings'][number] | Cart
   'Sin dip': 'sin-dip',
 };
 
-export const checkoutSubmissionEnabled = import.meta.env.DEV
+const localCheckoutEnabled = import.meta.env.DEV
   && import.meta.env.VITE_ORDER_INTAKE_LOCAL === 'true'
   && window.location.hostname === '127.0.0.1';
+export const checkoutSubmissionEnabled = import.meta.env.MODE !== 'whatsapp'
+  && (localCheckoutEnabled || import.meta.env.VITE_ORDER_INTAKE_GATEWAY === 'true');
 
 export function checkoutSubmissionBody(items: readonly CartItem[], details: CheckoutDetails) {
   const { delivery } = details;
@@ -33,7 +35,7 @@ export function checkoutSubmissionBody(items: readonly CartItem[], details: Chec
       finish_id: optionIds[line.finish],
       topping_ids: line.toppings.map(topping => optionIds[topping]).sort(),
       dip_id: optionIds[line.dip],
-      expected_unit_price_cents: product.provisionalPrice * 100,
+      expected_unit_price_cents: product.unitPrice * 100,
     })),
     contact: {
       name: details.name,
@@ -51,7 +53,7 @@ export function checkoutSubmissionBody(items: readonly CartItem[], details: Chec
 }
 
 export async function registerCheckout(key: string, body: string, subtotalCents: number) {
-  if (!import.meta.env.DEV || !checkoutSubmissionEnabled) return { kind: 'retry' } as const;
+  if (!checkoutSubmissionEnabled) return { kind: 'retry' } as const;
   try {
     const response = await fetch('/api/checkout/submit-order', {
       method: 'POST',

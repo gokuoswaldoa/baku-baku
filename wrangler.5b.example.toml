@@ -1,0 +1,26 @@
+name = "baku-baku-checkout-5b"
+main = "server/worker-entry.ts"
+compatibility_date = "2026-11-08"
+workers_dev = false
+preview_urls = false
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[vars]
+CHECKOUT_ENABLED = "false"
+CHECKOUT_ORIGIN = "https://checkout-5b.example.invalid"
+
+[observability]
+enabled = false
+
+[[durable_objects.bindings]]
+name = "CHECKOUT_LIMITS"
+class_name = "CheckoutLimiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["CheckoutLimiter"]

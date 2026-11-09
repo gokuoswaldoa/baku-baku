@@ -60,7 +60,7 @@ export function Configurator({ editing, onSave, onCancel }: ConfiguratorProps) {
         </fieldset>
         <div className="order-total">
           <h3>Tu Baku</h3>
-          <p className="order-price"><strong>${product.provisionalPrice}</strong> MXN <small>provisional</small></p>
+          <p className="order-price"><strong>${product.unitPrice}</strong> MXN <small>por unidad</small></p>
           <button className="action" type="submit">
             <ShoppingBag aria-hidden="true" /> {editing ? "Guardar cambios" : "Agregar al carrito"}
           </button>

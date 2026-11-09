@@ -75,5 +75,5 @@ export function restoreCart(raw: string | null): CartState {
 
 export function cartTotals(items: readonly CartItem[]) {
   const quantity = items.reduce((total, item) => total + item.quantity, 0);
-  return { quantity, subtotal: quantity * product.provisionalPrice };
+  return { quantity, subtotal: quantity * product.unitPrice };
 }
