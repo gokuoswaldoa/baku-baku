@@ -1,3 +1,5 @@
+import { cpSync } from 'node:fs';
+import { relative, sep } from 'node:path';
 import { defineConfig, loadEnv, type PluginOption, type ServerOptions } from 'vite';
 import react from '@vitejs/plugin-react';
 import { business } from './src/order-config';
@@ -9,6 +11,7 @@ export default defineConfig(({ command, mode, isPreview }) => {
   const env = loadEnv(mode, '.', ['VITE_ORDER_INTAKE_LOCAL', 'ORDER_LOCAL_']);
   const localIntake = command === 'serve' && !isPreview && env.VITE_ORDER_INTAKE_LOCAL === 'true';
   const server: ServerOptions = { port: 5173, host: true };
+  let publicDir = '';
   const plugins: PluginOption[] = [
     react(),
     {
@@ -18,6 +21,26 @@ export default defineConfig(({ command, mode, isPreview }) => {
         return html
           .replace('__BUSINESS_NAME__', () => escape(business.name))
           .replace(/__BUSINESS_LOCATION__/g, () => escape(business.location));
+      },
+    },
+    {
+      name: 'copy-public-assets',
+      apply: 'build',
+      configResolved(config) {
+        publicDir = config.publicDir;
+      },
+      writeBundle({ dir }) {
+        if (!publicDir || !dir) return;
+        cpSync(publicDir, dir, {
+          recursive: true,
+          filter(source) {
+            const path = relative(publicDir, source).split(sep).join('/');
+            // Gallery originals stay in the project. The site uses only the WebP variants.
+            return !path.startsWith('assets/galeria/')
+              || path === 'assets/galeria/webp'
+              || (path.startsWith('assets/galeria/webp/') && path.endsWith('.webp'));
+          },
+        });
       },
     },
   ];
@@ -59,6 +82,6 @@ export default defineConfig(({ command, mode, isPreview }) => {
     });
   }
 
-  return { plugins, server };
+  return { plugins, server, build: { copyPublicDir: false } };
 });
 

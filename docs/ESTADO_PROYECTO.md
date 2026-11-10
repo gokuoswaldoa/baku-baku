@@ -18,3 +18,11 @@ El configurador agrega personalizaciones al carrito, agrupa nuevas unidades idé
 El carrito se guarda en localStorage y se valida al recargar. Se descartan líneas inválidas u opciones retiradas y se exige revisar y corregir el carrito antes de consultar por WhatsApp. Si el navegador impide guardarlo, se muestra un aviso. Límites locales de 99 unidades por línea y 50 personalizaciones. La confirmación de disponibilidad y tarifa sigue a cargo del taller.
 
 Verificación con TypeScript, build y Edge en 360, 390, 430, 768, 1024 y 1440 px. Prueba reproducible mediante npm run build y node tests/cart.browser.mjs, con Edge instalado en Windows. Cubre personalizaciones distintas, tres unidades idénticas, doble clic, edición, cantidades, eliminación, persistencia, datos inválidos y mensaje único. Las capturas se guardan en .validacion-baku/.
+
+## Galería Así se ve tu Baku
+
+El carrusel usa las cuatro imágenes de producto elegidas para la galería. El avance automático ocurre cada cuatro segundos con un deslizamiento de 600 ms. El cursor y el foco pausan el avance. La navegación manual y la ampliación lo mantienen en pausa hasta reanudarlo. Con movimiento reducido, la galería funciona en modo manual sin deslizamiento.
+
+Las fotos se sirven en WebP de 480 px o hasta 960 px según el tamaño de pantalla. Al ampliar se carga una versión de mayor calidad que conserva el encuadre completo.
+
+En escritorio, las fotos 3 y 4 se muestran completas dentro del mismo marco. La compilación copia únicamente las variantes WebP de la galería. Los originales se conservan en el proyecto local.

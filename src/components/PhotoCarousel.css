@@ -1,0 +1,150 @@
+.baku-gallery {
+  max-width: 52rem;
+  margin: .35rem auto 2rem;
+}
+
+.baku-gallery h2 {
+  margin-bottom: .65rem;
+  font-size: clamp(1.65rem, 4vw, 2.6rem);
+  font-style: italic;
+  font-weight: 950;
+  line-height: 1.05;
+  letter-spacing: -.035em;
+  text-transform: uppercase;
+}
+
+.baku-gallery__viewport {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background: var(--ink);
+}
+
+.baku-gallery__track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  transition: transform 600ms cubic-bezier(.77, 0, .175, 1);
+}
+
+.baku-gallery__track[data-snap="true"] { transition: none; }
+
+.baku-gallery__track img {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 57%;
+}
+
+@media (width > 38rem) {
+  .baku-gallery__track .baku-gallery__image--full {
+    object-fit: contain;
+    object-position: center;
+  }
+}
+
+.baku-gallery__photo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: end;
+  align-items: end;
+  padding: .8rem;
+  cursor: zoom-in;
+  touch-action: pan-y pinch-zoom;
+}
+
+.baku-gallery__photo span {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .55rem .75rem;
+  border-radius: .75rem;
+  background: var(--ink);
+  color: var(--cream);
+  font-weight: 700;
+}
+
+.baku-gallery__photo svg { width: 1.15rem; height: 1.15rem; }
+
+.baku-gallery__controls, .baku-gallery__dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.baku-gallery__controls {
+  gap: .2rem;
+  margin-top: .45rem;
+}
+
+.baku-gallery__controls button, .baku-gallery__dialog button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: .75rem;
+  background: var(--ink);
+  color: var(--cream);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.baku-gallery__controls button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.baku-gallery__photo:focus-visible, .baku-gallery__dialog button:focus-visible {
+  outline: 3px solid var(--cream);
+  outline-offset: -5px;
+}
+
+.baku-gallery__dots button { background: transparent; }
+
+.baku-gallery__dots button::before {
+  width: .75rem;
+  height: .75rem;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  content: "";
+}
+
+.baku-gallery__dots button[aria-current="true"]::before { background: var(--orange); }
+
+.baku-gallery__dialog {
+  position: fixed;
+  inset: 0;
+  max-width: calc(100vw - 1rem);
+  max-height: calc(100dvh - 1rem);
+  margin: auto;
+  border-radius: 1rem;
+  background: var(--ink);
+  color: var(--cream);
+}
+
+.baku-gallery__dialog::backdrop { background: rgb(16 16 15 / 88%); }
+
+.baku-gallery__dialog button {
+  position: absolute;
+  top: .45rem;
+  right: .45rem;
+  z-index: 1;
+}
+
+.baku-gallery__dialog img {
+  max-width: 100%;
+  max-height: calc(100dvh - 1rem);
+  object-fit: contain;
+}
+
+@media (max-width: 38rem) {
+  .baku-gallery__viewport { aspect-ratio: 4 / 5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .baku-gallery__track { transition: none; }
+}
