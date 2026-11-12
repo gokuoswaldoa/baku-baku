@@ -10,9 +10,10 @@ export function CartOrder() {
     catch { return { items: [], needsReview: true }; }
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<{ kind: 'added' | 'limit' | 'cart'; message: string } | null>(null);
   const [storageError, setStorageError] = useState(false);
   const lastAdd = useRef(-Infinity);
+  const editButton = useRef<HTMLButtonElement | null>(null);
   const editing = cart.items.find(item => item.id === editingId) ?? null;
 
   useEffect(() => {
@@ -22,6 +23,11 @@ export function CartOrder() {
     } catch { setStorageError(true); }
   }, [cart]);
 
+  function endEditing() {
+    setEditingId(null);
+    requestAnimationFrame(() => editButton.current?.focus());
+  }
+
   function save(selection: Personalization) {
     if (!validPersonalization(selection)) return;
     const now = Date.now();
@@ -29,7 +35,7 @@ export function CartOrder() {
     lastAdd.current = now;
     const existing = cart.items.find(item => samePersonalization(item, selection));
     if (!editing && (existing ? existing.quantity >= maxQuantity : cart.items.length >= maxLines)) {
-      setNotice('Alcanzaste el límite de este carrito. Ajusta sus cantidades antes de continuar.');
+      setNotice({ kind: 'limit', message: 'Alcanzaste el límite de este carrito. Ajusta sus cantidades antes de continuar.' });
       return;
     }
     const id = crypto.randomUUID();
@@ -40,19 +46,25 @@ export function CartOrder() {
       if (current.items.length >= maxLines) return current;
       return { ...current, items: [...current.items, { ...selection, id, quantity: 1 }] };
     });
-    setEditingId(null);
-    setNotice(editing ? 'Personalización actualizada.' : 'Bola agregada al carrito.');
+    if (editing) {
+      endEditing();
+      setNotice({ kind: 'cart', message: 'Personalización actualizada.' });
+    } else {
+      const total = cart.items.reduce((sum, item) => sum + item.quantity, 1);
+      setNotice({ kind: 'added', message: total === 1 ? 'Bola agregada al carrito.' : `Bola agregada al carrito. ${total} en total.` });
+    }
   }
 
   function changeQuantity(id: string, quantity: number) {
     if (!validQuantity(quantity)) return;
     setCart(current => ({ ...current, items: current.items.map(item => item.id === id ? { ...item, quantity } : item) }));
+    if (notice?.kind === 'added') setNotice(null);
   }
 
   function remove(id: string) {
     setCart(current => ({ ...current, items: current.items.filter(item => item.id !== id) }));
     if (editingId === id) setEditingId(null);
-    setNotice('Personalización eliminada.');
+    setNotice({ kind: 'cart', message: 'Personalización eliminada.' });
   }
 
   function validateItems() {
@@ -63,10 +75,17 @@ export function CartOrder() {
 
   return (
     <>
-      <Configurator key={editing?.id ?? 'new'} editing={editing} onSave={save} onCancel={() => setEditingId(null)} />
+      <Configurator
+        key={editing?.id ?? 'new'}
+        editing={editing}
+        feedback={notice && notice.kind !== 'cart' ? notice.message : ''}
+        added={notice?.kind === 'added'}
+        onSave={save}
+        onCancel={endEditing}
+      />
       <section className="cart-section" id="carrito" aria-labelledby="cart-title">
-        <h2 id="cart-title">Tu carrito</h2>
-        <p role="status">{notice}</p>
+        <h2 id="cart-title" tabIndex={-1}>Tu carrito</h2>
+        <p role="status">{notice?.kind === 'cart' ? notice.message : ''}</p>
         {storageError && <p role="alert">El navegador no pudo guardar el carrito. Conserva esta página abierta hasta enviar tu consulta.</p>}
         {cart.needsReview && (
           <div className="cart-warning" role="alert">
@@ -91,9 +110,12 @@ export function CartOrder() {
                   </select>
                 </label>
                 <button type="button" aria-label={'Aumentar cantidad de bola ' + (index + 1)} disabled={item.quantity >= maxQuantity} onClick={() => changeQuantity(item.id, item.quantity + 1)}>+</button>
-                <button className="cart-text-button" type="button" aria-label={'Editar bola ' + (index + 1)} onClick={() => {
+                <button className="cart-text-button" type="button" aria-label={'Editar bola ' + (index + 1)} onClick={event => {
+                  editButton.current = event.currentTarget;
+                  setNotice(null);
                   setEditingId(item.id);
-                  document.getElementById('configurador')?.scrollIntoView({ behavior: 'smooth' });
+                  const instant = event.detail === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                  document.getElementById('configurador')?.scrollIntoView({ behavior: instant ? 'instant' : 'smooth' });
                   requestAnimationFrame(() => document.querySelector<HTMLInputElement>('input[name=acabado]:checked')?.focus({ preventScroll: true }));
                 }}>Editar</button>
                 <button className="cart-text-button" type="button" aria-label={'Eliminar bola ' + (index + 1)} onClick={() => remove(item.id)}>Eliminar</button>
