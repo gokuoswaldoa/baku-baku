@@ -17,7 +17,7 @@ export function Navbar() {
     if (!configurator || !footer) return;
 
     const updateActive = () => {
-      const readingLine = window.innerHeight * .25;
+      const readingLine = window.innerHeight / 2;
       const footerBounds = footer.getBoundingClientRect();
       if (footerBounds.top <= readingLine || footerBounds.bottom <= window.innerHeight + 2) {
         setActive('como-pedir');
