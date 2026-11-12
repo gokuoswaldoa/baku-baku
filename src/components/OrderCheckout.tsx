@@ -124,16 +124,6 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
 
   return (
     <form className="cart-checkout" autoComplete="off" onChange={clearPreview} onSubmit={prepare}>
-      <div className="cart-subtotal" aria-live="polite">
-        <p>{totals.quantity} bolas en total</p>
-        <strong>Subtotal de productos: ${totals.subtotal} MXN</strong>
-        {modality === 'entrega' && totals.quantity > 0 && (
-          <>
-            <p className="order-note">{deliveryReference}</p>
-            <p className="order-note">{deliveryTotalEstimate(totals.subtotal)} {availability.delivery}</p>
-          </>
-        )}
-      </div>
       <div className="checkout-details">
         <label className="modality">Modalidad del pedido
           <select value={modality} onChange={event => setModality(event.target.value === 'entrega' ? 'entrega' : 'recogida')}>
@@ -143,19 +133,26 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
         </label>
         <fieldset>
           <legend>Contacto del pedido</legend>
-          <label className="modality">Nombre de contacto
-            <input name="customerName" required maxLength={120} pattern={'.*\\S.*'} />
-          </label>
-          <ContactPhone name="customerPhone" label="Teléfono de contacto" />
+          <div className="checkout-contact-fields">
+            <label className="modality">Nombre de contacto
+              <input name="customerName" required maxLength={120} pattern={'.*\\S.*'} />
+            </label>
+            <ContactPhone name="customerPhone" label="Teléfono de contacto" />
+          </div>
         </fieldset>
         {modality === 'entrega' ? (
           <>
             <fieldset>
+              <legend>Quién recibe</legend>
+              <div className="checkout-contact-fields">
+                <label className="modality">Nombre de quien recibe
+                  <input name="recipientName" required maxLength={120} pattern={'.*\\S.*'} />
+                </label>
+                <ContactPhone name="recipientPhone" label="Teléfono de quien recibe" />
+              </div>
+            </fieldset>
+            <fieldset>
               <legend>Dirección de entrega</legend>
-              <label className="modality">Nombre de quien recibe
-                <input name="recipientName" required maxLength={120} pattern={'.*\\S.*'} />
-              </label>
-              <ContactPhone name="recipientPhone" label="Teléfono de quien recibe" />
               <label className="modality">Calle
                 <input name="street" required maxLength={120} pattern={'.*\\S.*'} />
               </label>
@@ -187,7 +184,17 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
           </>
         ) : <p className="order-note">{availability.pickup}</p>}
       </div>
-      <div>
+      <div className="checkout-review">
+        <div className="cart-subtotal" aria-live="polite">
+          <p>{totals.quantity} bolas en total</p>
+          <strong>Subtotal de productos: <span>${totals.subtotal} MXN</span></strong>
+          {modality === 'entrega' && totals.quantity > 0 && (
+            <>
+              <p className="order-note">{deliveryReference}</p>
+              <p className="order-note">{deliveryTotalEstimate(totals.subtotal)} {availability.delivery}</p>
+            </>
+          )}
+        </div>
         <button className="action" type="submit" disabled={!items.length || blocked || editing || Boolean(pending.current)}>
           <MessageCircle aria-hidden="true" /> {checkoutSubmissionEnabled ? 'Registrar solicitud' : 'Revisar pedido para WhatsApp'}
         </button>
@@ -202,7 +209,7 @@ export function OrderCheckout({ items, blocked, editing, validateItems }: Props)
           <section className="checkout-preview" aria-labelledby="checkout-preview-title">
             <h3 id="checkout-preview-title" ref={previewTitle} tabIndex={-1}>Resumen para el negocio</h3>
             <p className="order-note">WhatsApp abrirá con los datos del pedido listos para enviar. Pulsa Enviar en el chat.</p>
-            <textarea ref={previewText} aria-label="Mensaje de WhatsApp del pedido" readOnly rows={9} value={message} />
+            <textarea ref={previewText} aria-label="Mensaje de WhatsApp del pedido" readOnly rows={12} value={message} />
             <a
               className="action"
               href={whatsapp + '?text=' + encodeURIComponent(message)}

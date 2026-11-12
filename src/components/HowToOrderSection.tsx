@@ -17,15 +17,20 @@ export function HowToOrderSection() {
             <span className="step-number brush" aria-hidden="true">{index + 1}</span>
             <div>
               <h3>{title}</h3><p>{description}</p>
-              {index === 1 && <p>{business.hours}</p>}
             </div>
             {index < steps.length - 1 && <ChevronsRight className="step-arrow" aria-hidden="true" />}
           </li>
         ))}
       </ol>
-      <a className="contact" href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label={"Contactar por WhatsApp al " + business.whatsappDisplay}>
-        <MessageCircle aria-hidden="true" /> {business.whatsappDisplay}
-      </a>
+      <div className="how-contact">
+        <div>
+          <h3>Horario y contacto</h3>
+          <p>{business.hours}</p>
+        </div>
+        <a className="contact" href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label={"Contactar por WhatsApp al " + business.whatsappDisplay}>
+          <MessageCircle aria-hidden="true" /> {business.whatsappDisplay}
+        </a>
+      </div>
     </footer>
   );
 }

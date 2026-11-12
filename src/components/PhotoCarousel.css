@@ -1,9 +1,14 @@
 .baku-gallery {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   max-width: 52rem;
   margin: .35rem auto 2rem;
 }
 
 .baku-gallery h2 {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
   margin-bottom: .65rem;
   font-size: clamp(1.65rem, 4vw, 2.6rem);
   font-style: italic;
@@ -11,6 +16,12 @@
   line-height: 1.05;
   letter-spacing: -.035em;
   text-transform: uppercase;
+}
+
+.baku-gallery h2::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid #a58a69;
 }
 
 .baku-gallery__viewport {
@@ -77,8 +88,13 @@
 }
 
 .baku-gallery__controls {
-  gap: .2rem;
-  margin-top: .45rem;
+  justify-self: center;
+  flex-wrap: wrap;
+  max-width: 100%;
+  padding: .2rem;
+  margin-top: .65rem;
+  border: 1px solid #a58a69;
+  border-radius: 1rem;
 }
 
 .baku-gallery__controls button, .baku-gallery__dialog button {
@@ -96,6 +112,18 @@
 .baku-gallery__controls button:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+.baku-gallery__controls > button:nth-of-type(3) { margin-left: .3rem; }
+
+@media (hover: hover) and (pointer: fine) {
+  .baku-gallery__controls > button:hover { background: #3a2719; }
+  .baku-gallery__dots button:hover::before { border-color: #a83c08; }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .baku-gallery__controls > button { transition: background-color 130ms ease; }
+  .baku-gallery__dots button::before { transition: border-color 130ms ease; }
 }
 
 .baku-gallery__photo:focus-visible, .baku-gallery__dialog button:focus-visible {
